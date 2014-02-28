@@ -521,7 +521,6 @@ Proof.
     END
       {{ I /\ ~(X <> 0) }} ->>
       {{ Y = m }}
-
 *)
 (** [] *)
 
@@ -542,7 +541,20 @@ Proof.
     specification of [add_slowly]; then (informally) decorate the
     program accordingly. *)
 
-(* FILL IN HERE *)
+(*
+  {{ Z = n /\ X = m }} ->>
+  {{ Z + X = n + m }}
+  WHILE X <> 0 DO
+     {{ Z + X = n + m /\ X <> 0 }} ->>
+     {{ (Z+1) + (X-1) = n + m }}
+     Z ::= Z + 1;
+     {{ Z + (X-1) = n + m }}
+     X ::= X - 1
+     {{ Z + X = n + m }}
+  END
+  {{ Z + X = n + m /\ ~(X <> 0) }} ->>
+  {{ Z = n + m }}
+*)
 (** [] *)
 
 (* ####################################################### *)

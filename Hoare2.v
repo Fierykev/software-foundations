@@ -994,25 +994,24 @@ Definition is_wp P c Q :=
 (** **** Exercise: 1 star, optional (wp) *)
 (** What are the weakest preconditions of the following commands
    for the following postconditions?
-  1) {{ ? }}  SKIP  {{ X = 5 }}
+  1) {{ X = 5 }}  SKIP  {{ X = 5 }}
 
-  2) {{ ? }}  X ::= Y + Z {{ X = 5 }}
+  2) {{ Y + Z = 5 }}  X ::= Y + Z {{ X = 5 }}
 
-  3) {{ ? }}  X ::= Y  {{ X = Y }}
+  3) {{ True }}  X ::= Y  {{ X = Y }}
 
-  4) {{ ? }}
+  4) {{ X = 0 /\ Z = 4 \/ X <> 0 /\ W = 3 }}
      IFB X == 0 THEN Y ::= Z + 1 ELSE Y ::= W + 2 FI
      {{ Y = 5 }}
 
-  5) {{ ? }}
+  5) {{ False }}
      X ::= 5
      {{ X = 0 }}
 
-  6) {{ ? }}
+  6) {{ True }}
      WHILE True DO X ::= 0 END
      {{ X = 0 }}
 *)
-(* FILL IN HERE *)
 (** [] *)
 
 (** **** Exercise: 3 stars, advanced, optional (is_wp_formal) *)

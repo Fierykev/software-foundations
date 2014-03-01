@@ -1023,7 +1023,18 @@ Theorem is_wp_example :
   is_wp (fun st => st Y <= 4)
     (X ::= APlus (AId Y) (ANum 1)) (fun st => st X <= 5).
 Proof.
-  (* FILL IN HERE *) Admitted.
+  unfold is_wp. split.
+
+  Case "{{P}} c {{Q}}".
+    eapply hoare_consequence_pre. apply hoare_asgn.
+    unfold assert_implies, assn_sub, aeval, update. intros st H. simpl. omega.
+
+  Case "P' ->> P".
+    unfold assert_implies, hoare_triple.
+    intros P Hassn st HP.
+    apply Hassn with (st' := update st X (aeval st (APlus (AId Y) (ANum 1)))) in HP.
+    unfold update, aeval in HP. simpl in HP. omega. constructor. reflexivity.
+Qed.
 (** [] *)
 
 (** **** Exercise: 2 stars, advanced (hoare_asgn_weakest) *)

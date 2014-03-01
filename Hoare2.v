@@ -1064,7 +1064,9 @@ Lemma hoare_havoc_weakest : forall (P Q : Assertion) (X : id),
   {{ P }} HAVOC X {{ Q }} ->
   P ->> havoc_pre X Q.
 Proof.
-(* FILL IN HERE *) Admitted.
+  unfold assert_implies, havoc_pre. intros P Q X H st HP n.
+  apply (H st). constructor. assumption.
+Qed.
 End Himp2.
 (** [] *)
 

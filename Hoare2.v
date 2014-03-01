@@ -849,7 +849,7 @@ Qed.
   Z ::= 0;
   {{ X = a /\ Y = b /\ Z = 0 }}
   WHILE (X <> 0 /\ Y <> 0) DO
-  {{ X = a /\ Y = b /\ Z = min a b - min X Y /\ X <> 0 /\ Y <> 0 }} ->>
+  {{ Z = min a b - min X Y /\ X <> 0 /\ Y <> 0 }} ->>
   {{ Z + 1 = min a b - min (X - 1) (Y - 1) }}
   X := X - 1;
   {{ Z + 1 = min a b - min X (Y - 1) }}
@@ -883,32 +883,32 @@ Qed.
     following decorated program.
 
     {{ True }} ->>
-    {{                                        }}
+    {{ 0 = 0 /\ 0 = 0 /\ c = c }}
   X ::= 0;
-    {{                                        }}
+    {{ X = 0 /\ 0 = 0 /\ c = c }}
   Y ::= 0;
-    {{                                        }}
+    {{ X = 0 /\ Y = 0 /\ c = c }}
   Z ::= c;
-    {{                                        }}
+    {{ X = 0 /\ Y = 0 /\ Z = c }}
   WHILE X <> a DO
-      {{                                        }} ->>
-      {{                                        }}
+      {{ Z = c + X + Y /\ X <> a }} ->>
+      {{ Z + 1 = c + (X + 1) + Y }}
     X ::= X + 1;
-      {{                                        }}
+      {{ Z + 1 = c + X + Y }}
     Z ::= Z + 1
-      {{                                        }}
+      {{ Z = c + X + Y }}
   END;
-    {{                                        }} ->>
-    {{                                        }}
+    {{ Z = c + X + Y /\ ~ ( X <> a) }} ->>
+    {{ Z = c + a + Y }}
   WHILE Y <> b DO
-      {{                                        }} ->>
-      {{                                        }}
+      {{ Z = c + a + Y /\ Y <> b }} ->>
+      {{ Z + 1 = c + a + Y + 1 }}
     Y ::= Y + 1;
-      {{                                        }}
+      {{ Z + 1 = c + a + Y }}
     Z ::= Z + 1
-      {{                                        }}
+      {{ Z = c + a + Y }}
   END
-    {{                                        }} ->>
+    {{ Z = c + a + Y /\ ~ ( Y <> b ) }} ->>
     {{ Z = a + b + c }}
 *)
 

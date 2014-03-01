@@ -633,7 +633,24 @@ Theorem parity_correct : forall m,
   END
     {{ fun st => st X = parity m }}.
 Proof.
-  (* FILL IN HERE *) Admitted.
+  intro m.
+  eapply hoare_consequence.
+  apply hoare_while with (P:=fun st => parity (st X) = parity m).
+
+  Case "Body preserves invariant".
+    eapply hoare_consequence_pre.
+    apply hoare_asgn. intros st [Hpar Hb].
+    unfold assn_sub, update. simpl. rewrite <- Hpar. apply parity_ge_2.
+    unfold bassn, beval, aeval in Hb. apply ble_nat_true in Hb. assumption.
+
+  Case "Pre condition".
+    intros st H. rewrite H. reflexivity.
+
+  Case "Post condition".
+    intros st [Hpar Hb]. rewrite <- Hpar. symmetry. apply parity_lt_2.
+    unfold bassn,beval,aeval in Hb. rewrite not_true_iff_false in Hb.
+    apply ble_nat_false in Hb. assumption.
+Qed.
 (** [] *)
 
 (* ####################################################### *)

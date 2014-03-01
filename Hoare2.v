@@ -841,24 +841,24 @@ Qed.
   plus, as usual, standard high-school algebra.
 
   {{ True }} ->>
-  {{                    }}
+  {{ a = a /\ b = b /\ 0 = 0 }}
   X ::= a;
-  {{                       }}
+  {{ X = a /\ b = b /\ 0 = 0 }}
   Y ::= b;
-  {{                       }}
+  {{ X = a /\ Y = b /\ 0 = 0 }}
   Z ::= 0;
-  {{                       }}
+  {{ X = a /\ Y = b /\ Z = 0 }}
   WHILE (X <> 0 /\ Y <> 0) DO
-  {{                                     }} ->>
-  {{                                }}
+  {{ X = a /\ Y = b /\ Z = min a b - min X Y /\ X <> 0 /\ Y <> 0 }} ->>
+  {{ Z + 1 = min a b - min (X - 1) (Y - 1) }}
   X := X - 1;
-  {{                            }}
+  {{ Z + 1 = min a b - min X (Y - 1) }}
   Y := Y - 1;
-  {{                        }}
+  {{ Z + 1 = min a b - min X Y }}
   Z := Z + 1;
-  {{                       }}
+  {{ Z = min a b - min X Y }}
   END
-  {{                            }} ->>
+  {{ Z = min a b - min X Y /\ ~( X <> 0 /\ Y <> 0) }} ->>
   {{ Z = min a b }}
 *)
 

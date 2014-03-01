@@ -1044,7 +1044,14 @@ Qed.
 Theorem hoare_asgn_weakest : forall Q X a,
   is_wp (Q [X |-> a]) (X ::= a) Q.
 Proof.
-(* FILL IN HERE *) Admitted.
+  unfold is_wp. intros Q X a. split.
+
+  Case "{{P}} c {{Q}}". apply hoare_asgn.
+
+  Case "P' ->> P".
+    unfold assert_implies, hoare_triple, assn_sub. intros P Hassn st HP.
+    apply Hassn with (st:=st). constructor. reflexivity. assumption.
+Qed.
 (** [] *)
 
 (** **** Exercise: 2 stars, advanced, optional (hoare_havoc_weakest) *)

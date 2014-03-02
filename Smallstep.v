@@ -659,6 +659,10 @@ Inductive tm : Type :=
   | tfalse : tm
   | tif : tm -> tm -> tm -> tm.
 
+Tactic Notation "tm_cases" tactic(first) ident(c) :=
+  first;
+  [ Case_aux c "ttrue" | Case_aux c "tfalse" | Case_aux c "tif" ].
+
 Inductive value : tm -> Prop :=
   | v_true : value ttrue
   | v_false : value tfalse.
@@ -684,7 +688,11 @@ Inductive step : tm -> tm -> Prop :=
 Definition bool_step_prop1 :=
   tfalse ==> tfalse.
 
-(* FILL IN HERE *)
+(* not provable (tfalse is a value) *)
+Lemma not_bool_step_prop1 : ~ bool_step_prop1.
+Proof.
+  unfold not, bool_step_prop1. intros. inversion H.
+Qed.
 
 Definition bool_step_prop2 :=
      tif
@@ -694,7 +702,11 @@ Definition bool_step_prop2 :=
   ==>
      ttrue.
 
-(* FILL IN HERE *)
+(* not provable - needs several steps *)
+Lemma not_bool_step_prop2 : ~bool_step_prop2.
+Proof.
+  unfold not, bool_step_prop2. intros. inversion H.
+Qed.
 
 Definition bool_step_prop3 :=
      tif
@@ -707,6 +719,12 @@ Definition bool_step_prop3 :=
        (tif ttrue ttrue ttrue)
        tfalse.
 
+Lemma bool_step_prop3_holds :
+  bool_step_prop3.
+Proof.
+  unfold bool_step_prop3. apply ST_If. apply ST_IfTrue.
+Qed.
+
 (* FILL IN HERE *)
 (** [] *)
 
@@ -717,7 +735,18 @@ Definition bool_step_prop3 :=
 Theorem strong_progress : forall t,
   value t \/ (exists t', t ==> t').
 Proof.
-  (* FILL IN HERE *) Admitted.
+  intros t. tm_cases (induction t) Case.
+  Case "ttrue".
+    left. constructor.
+  Case "tfalse".
+    left. constructor.
+  Case "tif".
+    inversion IHt1; right;
+    inversion H; subst.
+      exists t2. constructor.
+      exists t3. constructor.
+      exists (tif x t2 t3). constructor. assumption.
+Qed.
 (** [] *)
 
 (** **** Exercise: 2 stars, optional (step_deterministic) *)

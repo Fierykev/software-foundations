@@ -1480,9 +1480,46 @@ Fixpoint real_fact (n:nat) : nat :=
   | S n' => n * (real_fact n')
   end.
 
+Lemma real_fact_succ : forall n,
+  real_fact (n+1) = (n+1) * real_fact n.
+Proof.
+  intros n. replace (n+1) with (S n) by omega. reflexivity.
+Qed.
+
+
 (** Following the pattern of [subtract_slowly_dec], write a decorated
     program that implements the factorial function and prove it
     correct. *)
+
+Example factorial_dec (n:nat) : dcom := (
+    {{ fun _ => True }}
+  X ::= ANum 1
+    {{ fun st => st X = 1 }} ;;
+  Y ::= ANum 1
+    {{ fun st => st X = 1 /\ st Y = 1 }} ;;
+    ->>
+    {{ fun st => st Y = real_fact (st X) }}
+  WHILE BNot (BEq (AId X) (ANum n)) DO
+      {{ fun st => st Y = real_fact (st X) /\ st X <> n }}
+      ->>
+      {{ fun st => (st X + 1) * st Y  = real_fact ((st X) + 1) }}
+    X ::= APlus (AId X) (ANum 1)
+      {{ fun st => st X * st Y = real_fact (st X) }} ;;
+    Y ::= AMult (AId X) (AId Y)
+      {{ fun st => st Y = real_fact (st X) }}
+  END
+    {{ fun st => st Y = real_fact (st X) /\ ~ (st X <> n) }} ->>
+    {{ fun st => st Y = real_fact n }}
+) % dcom.
+
+Theorem factorial_dec_correct : forall n,
+  dec_correct (factorial_dec n).
+Proof.
+  intro n. verify. symmetry. apply real_fact_succ.
+  assert ({st X = n} + {st X <> n}) by (apply eq_nat_dec).
+  inversion H; clear H. auto.
+  apply H0 in H1. inversion H1.
+Qed.
 
 (* FILL IN HERE *)
 (** [] *)

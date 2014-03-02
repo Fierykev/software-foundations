@@ -829,10 +829,23 @@ Qed.
     - Is the [step] relation still deterministic?  Write yes or no and
       briefly (1 sentence) explain your answer.
 
+    A: No it is not deterministic, because we can apply two different
+       rules to get reductions, even though both rules will lead us
+       eventually to the same normal forms.
+
       Optional: prove your answer correct in Coq.
 *)
 
-(* FILL IN HERE *)
+Theorem step_not_deterministic :
+  ~ (deterministic step).
+Proof.
+  unfold not, deterministic. intro.
+  assert (tif ttrue tfalse tfalse = tfalse).
+  apply H with (x:=tif (tif ttrue ttrue ttrue) tfalse tfalse).
+  constructor. constructor.
+  constructor. inversion H0.
+Qed.
+
 (**
    - Does a strong progress theorem hold? Write yes or no and
      briefly (1 sentence) explain your answer.

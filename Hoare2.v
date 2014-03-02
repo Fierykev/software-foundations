@@ -1447,12 +1447,28 @@ Proof. intros m p. verify. (* this grinds for a bit! *) Qed.
     Write a _formal_ version of this decorated program and prove it
     correct. *)
 
-Example slow_assignment_dec (m:nat) : dcom :=
-(* FILL IN HERE *) admit.
+Example slow_assignment_dec (m:nat) : dcom := (
+      {{ fun st => st X = m }} ->>
+      {{ fun st => st X = m /\ st Y = st Y }}
+    Y ::= ANum 0
+      {{ fun st => st X = m /\ st Y = 0 }} ;;
+      ->>
+      {{ fun st => st X + st Y = m }}
+    WHILE BNot (BEq (AId X) (ANum 0)) DO
+      {{ fun st => st X + st Y = m /\ st X <> 0 }} ->>
+      {{ fun st => (st X - 1) + (st Y + 1) = m }}
+      X ::= AMinus (AId X) (ANum 1)
+      {{ fun st => st X + (st Y + 1) = m }} ;;
+      Y ::= APlus (AId Y) (ANum 1)
+      {{ fun st => st X + st Y = m }}
+    END
+      {{ fun st => st X + st Y = m /\ ~(st X <> 0) }} ->>
+      {{ fun st => st Y = m }}
+) % dcom.
 
 Theorem slow_assignment_dec_correct : forall m,
   dec_correct (slow_assignment_dec m).
-Proof. (* FILL IN HERE *) Admitted.
+Proof. intro m. verify. Qed.
 (** [] *)
 
 (** **** Exercise: 4 stars, advanced (factorial_dec)  *)

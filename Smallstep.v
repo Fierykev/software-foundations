@@ -850,17 +850,38 @@ Qed.
    - Does a strong progress theorem hold? Write yes or no and
      briefly (1 sentence) explain your answer.
 
+
      Optional: prove your answer correct in Coq.
 *)
 
-(* FILL IN HERE *)
+(*
+     A: Yes, this works, every expression evaluates in multiple
+        steps to the same value.
+*)
+Theorem strong_progress : forall t,
+  value t \/ exists t', t ==> t'.
+Proof.
+  intro t. induction t.
+  Case "ttrue". left. constructor.
+  Case "tfalse". left. constructor.
+  Case "tif". right. inversion IHt1.
+    inversion H.
+      exists t2. constructor.
+      exists t3. constructor.
+      inversion H. exists (tif x t2 t3). constructor. assumption.
+Qed.
+
 (**
    - In general, is there any way we could cause strong progress to
      fail if we took away one or more constructors from the original
      step relation? Write yes or no and briefly (1 sentence) explain
      your answer.
 
-(* FILL IN HERE *)
+(*
+  Yes, strong_progress would fail if any except for the short circuit
+  constructors would be removed from the step relation.
+*)
+
 *)
 (** [] *)
 

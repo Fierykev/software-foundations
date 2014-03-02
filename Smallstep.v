@@ -394,27 +394,21 @@ Theorem step_deterministic :
   deterministic step.
 Proof.
   unfold deterministic. intros x y1 y2 H1 H2. generalize dependent y2.
-  step_cases (induction H1) Case; intros y2 H2.
+  step_cases (induction H1) Case; intros y2 H2; inversion H2; subst; auto.
   Case "ST_PlusConstConst".
-    inversion H2; subst.
-      reflexivity.
       inversion H3.
       inversion H4.
 
   Case "ST_Plus1".
-    inversion H2; subst.
       inversion H1.
       apply IHstep in H4. rewrite H4. reflexivity.
       inversion H3. rewrite <- H in H1. inversion H1.
 
   Case "ST_Plus2".
-    inversion H2; subst.
       inversion H1.
       inversion H5; subst; inversion H.
       apply IHstep in H6. rewrite H6. reflexivity.
 Qed.
-
-  (* FILL IN HERE *) Admitted.
 (** [] *)
 
 (* ########################################################### *)
@@ -559,7 +553,13 @@ Inductive step : tm -> tm -> Prop :=
 Lemma value_not_same_as_normal_form :
   exists v, value v /\ ~ normal_form step v.
 Proof.
-  (* FILL IN HERE *) Admitted.
+  exists (P (C 1) (C 2)).
+  split.
+  Case "l". apply v_funny.
+  Case "r".
+    unfold not, normal_form. intros.
+    apply H. exists (C 3). apply ST_PlusConstConst.
+Qed.
 (** [] *)
 
 End Temp1.

@@ -680,6 +680,10 @@ Inductive step : tm -> tm -> Prop :=
 
   where " t '==>' t' " := (step t t').
 
+Tactic Notation "step_cases" tactic(first) ident(c) :=
+  first ;
+  [ Case_aux c "IfTrue" | Case_aux c "IfFalse" | Case_aux c "If" ].
+
 (** **** Exercise: 1 star (smallstep_bools) *)
 (** Which of the following propositions are provable?  (This is just a
     thought exercise, but for an extra challenge feel free to prove
@@ -753,7 +757,14 @@ Qed.
 Theorem step_deterministic :
   deterministic step.
 Proof.
-  (* FILL IN HERE *) Admitted.
+  unfold deterministic. intros. generalize dependent y2.
+  step_cases (induction H) Case; intros; subst.
+  Case "IfTrue". inversion H0. reflexivity. subst. inversion H4.
+
+  Case "IfFalse". inversion H0. reflexivity. subst. inversion H4.
+
+  Case "If".  inversion H0; subst. inversion H. inversion H. apply IHstep in H5. rewrite H5. reflexivity.
+Qed.
 (** [] *)
 
 Module Temp5.

@@ -1082,11 +1082,24 @@ Definition normal_form_of (t t' : tm) :=
 Theorem normal_forms_unique:
   deterministic normal_form_of.
 Proof.
-  unfold deterministic. unfold normal_form_of.  intros x y1 y2 P1 P2.
-  inversion P1 as [P11 P12]; clear P1. inversion P2 as [P21 P22]; clear P2.
-  generalize dependent y2.
-  (* We recommend using this initial setup as-is! *)
-  (* FILL IN HERE *) Admitted.
+  unfold deterministic, normal_form_of. intros x y1 y2 [P11 P12] [P21 P22].
+  (*inversion P1 as [P11 P12]; clear P1. inversion P2 as [P21 P22]; clear P2.*)
+  generalize dependent y2. (* remember (x ==>* y1) as Pxy1 eqn:HPxy1. rewrite HPxy1 in P11.*)
+  induction P11.
+
+  Case "Base".
+  intros. apply nf_is_value in P12. apply nf_is_value in P22.
+  inversion P12 as [n1]. inversion P22 as [n2]. subst. inversion P21. reflexivity. inversion H.
+
+  Case "IH".
+    intros. apply IHP11.
+      assumption.
+      inversion P21. subst. apply nf_is_value in P22. inversion P22. subst. inversion H. subst.
+      assert  (y = y0). eapply step_deterministic. apply H. assumption. symmetry in H2. subst. assumption.
+      assumption.
+Qed.
+
+
 (** [] *)
 
 (** Indeed, something stronger is true for this language (though not

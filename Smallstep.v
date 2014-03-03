@@ -1292,7 +1292,14 @@ Qed.
 Theorem multistep__eval : forall t t',
   normal_form_of t t' -> exists n, t' = C n /\ t || n.
 Proof.
-  (* FILL IN HERE *) Admitted.
+  intros t t' H. unfold normal_form_of in H. inversion H as [H1 H2]. clear H.
+  multi_cases (induction H1) Case.
+  Case "multi_refl". apply nf_is_value in H2. inversion H2. exists n. split. reflexivity. constructor.
+
+  Case "multi_step".
+    apply IHmulti in H2. inversion H2 as [n H3]. inversion H3 as [Heq Hev]. apply step__eval with (n:=n) in H.
+    exists n. auto. assumption.
+Qed.
 (** [] *)
 
 (* ########################################################### *)

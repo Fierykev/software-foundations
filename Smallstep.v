@@ -1239,7 +1239,18 @@ Theorem eval__multistep : forall t n,
     includes [==>]. *)
 
 Proof.
-  (* FILL IN HERE *) Admitted.
+  intro t. tm_cases (induction t) Case.
+
+  Case "C". intros. inversion H. subst. constructor.
+
+  Case "P". intros. inversion H. subst.
+    apply IHt1 in H2.
+    apply IHt2 in H4.
+
+    apply multi_trans with (P (C n1) t2). apply multistep_congr_1. assumption.
+    apply multi_trans with (P (C n1) (C n2)). apply multistep_congr_2. apply v_const. assumption.
+    eapply multi_step. apply ST_PlusConstConst. apply multi_refl.
+Qed.
 (** [] *)
 
 (** **** Exercise: 3 stars, advanced (eval__multistep_inf) *)

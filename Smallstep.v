@@ -1270,7 +1270,14 @@ Lemma step__eval : forall t t' n,
      t || n.
 Proof.
   intros t t' n Hs. generalize dependent n.
-  (* FILL IN HERE *) Admitted.
+  induction Hs; intros.
+  Case "C".
+    inversion H. subst. constructor. constructor. constructor.
+  Case "1".
+    inversion H. subst. constructor. apply IHHs. assumption. assumption.
+  Case "2".
+    inversion H0. subst. constructor. assumption. apply IHHs. assumption.
+Qed.
 (** [] *)
 
 (** The fact that small-step reduction implies big-step is now

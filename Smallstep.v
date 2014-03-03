@@ -1136,7 +1136,10 @@ Lemma multistep_congr_2 : forall t1 t2 t2',
      t2 ==>* t2' ->
      P t1 t2 ==>* P t1 t2'.
 Proof.
-  (* FILL IN HERE *) Admitted.
+  intros t1 t2 t2' H Ht2. multi_cases (induction Ht2) Case.
+  Case "multi_refl". constructor.
+  Case "multi_step". eapply multi_step. apply ST_Plus2. assumption. eassumption. assumption.
+Qed.
 (** [] *)
 
 (** _Theorem_: The [step] function is normalizing -- i.e., for every

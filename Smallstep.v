@@ -1317,7 +1317,15 @@ Qed.
 Theorem evalF_eval : forall t n,
   evalF t = n <-> t || n.
 Proof.
-  (* FILL IN HERE *) Admitted.
+  intros t. tm_cases (induction t) Case; split; intros.
+
+  Case "C". simpl in H. subst. apply E_Const. inversion H. subst. reflexivity.
+
+  Case "P".
+    SCase "->".
+     simpl in H. rewrite <- H. apply E_Plus. apply IHt1. reflexivity. apply IHt2. reflexivity.
+     inversion H. subst. apply IHt1 in H2. apply IHt2 in H4. simpl. rewrite H2. rewrite H4. reflexivity.
+Qed.
 (** [] *)
 
 (** **** Exercise: 4 stars (combined_properties) *)

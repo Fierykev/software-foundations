@@ -1388,7 +1388,38 @@ Tactic Notation "step_cases" tactic(first) ident(c) :=
 
     Prove or disprove these two properties for the combined language. *)
 
-(* FILL IN HERE *)
+Lemma value_cannot_step : forall t t',
+  value t -> ~(t ==> t').
+Proof.
+  intro t. tm_cases (induction t) Case; unfold not; intros t' Con1 Con2;
+  try (inversion Con1); try (inversion Con2).
+Qed.
+
+Lemma step_deterministic : forall t t1 t2,
+  t ==> t1 -> t ==> t2 -> t1 = t2.
+Proof.
+  intros t t1 t2 H. generalize dependent t2. step_cases (induction H) Case; intros.
+  Case "ST_PlusConstConst".
+    inversion H. reflexivity. inversion H3. inversion H4.
+  Case "ST_Plus1".
+    inversion H0; subst. inversion H. apply IHstep in H4. rewrite H4. reflexivity.
+    eapply value_cannot_step in H3. unfold not in H3. apply H3 in H. inversion H.
+  Case "ST_Plus2".
+    inversion H1; subst. inversion H0.
+    apply value_cannot_step in H5. inversion H5. assumption. apply IHstep in H6. rewrite H6. reflexivity.
+  Case "ST_IfTrue". inversion H; subst. reflexivity. inversion H4.
+  Case "ST_IfFalse". inversion H; subst. reflexivity. inversion H4.
+  Case "ST_If". inversion H0; subst. inversion H. inversion H. apply IHstep in H5. rewrite H5. reflexivity.
+Qed.
+
+Lemma not_strong_progress : exists t,
+  ~(value t) /\ forall t', ~ (t ==> t').
+Proof.
+  exists (tif (C 0) ttrue ttrue). split.
+  Case "l". unfold not. intro. inversion H.
+  Case "r". intros t'. unfold not. intro Contra.
+    inversion Contra. inversion H3.
+Qed.
 (** [] *)
 
 End Combined.

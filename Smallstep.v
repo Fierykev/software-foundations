@@ -1856,12 +1856,43 @@ Definition stack_multistep st := multi (stack_step st).
     the stack machine small step semantics and then prove it. *)
 
 Definition compiler_is_correct_statement : Prop :=
-(* FILL IN HERE *) admit.
+  forall (e : aexp) (st : state),
+    stack_multistep st (s_compile e, []) ([], [aeval st e]).
 
+(*
+Theorem s_compile_correct : forall (e : aexp) (st : state),
+  s_execute st [] (s_compile e) = [aeval st e].
+Lemma s_execute_app : forall (st : state) (e : aexp) (prog : list sinstr) (stk : list nat),
+   s_execute st stk (s_compile e ++ prog) = s_execute st (aeval st e :: stk) prog.
+*)
+
+Lemma compiler_partial : forall (st : state) (e : aexp) (prg : list sinstr) (stk : list nat),
+   stack_multistep st (s_compile e ++ prg, stk) (prg, aeval st e :: stk).
+Proof.
+  intros st e.
+  aexp_cases (induction e) Case; intros.
+  Case "ANum". eapply multi_step. constructor. constructor.
+  Case "AId". eapply multi_step. constructor. constructor.
+  Case "APlus". simpl. rewrite app_assoc_4.
+    eapply multi_trans. apply IHe1.
+    eapply multi_trans. apply IHe2.
+    eapply multi_step. constructor. apply multi_refl.
+  Case "AMinus". simpl. rewrite app_assoc_4.
+    eapply multi_trans. apply IHe1.
+    eapply multi_trans. apply IHe2.
+    eapply multi_step. constructor. apply multi_refl.
+  Case "AMult". simpl. rewrite app_assoc_4.
+    eapply multi_trans. apply IHe1.
+    eapply multi_trans. apply IHe2.
+    eapply multi_step. constructor. apply multi_refl.
+Qed.
 
 Theorem compiler_is_correct : compiler_is_correct_statement.
 Proof.
-(* FILL IN HERE *) Admitted.
+  unfold compiler_is_correct_statement. intros e st.
+  assert (s_compile e ++ [] = s_compile e) by (apply app_nil_r). rewrite <- H.
+  apply compiler_partial.
+Qed.
 (** [] *)
 
 (* $Date: 2013-07-17 16:19:11 -0400 (Wed, 17 Jul 2013) $ *)

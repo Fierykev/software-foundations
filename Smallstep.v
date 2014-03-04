@@ -1772,7 +1772,18 @@ Lemma par_body_n : forall n st,
   exists st',
     par_loop / st ==>*  par_loop / st' /\ st' X = n /\ st' Y = 0.
 Proof.
-  (* FILL IN HERE *) Admitted.
+  intros n. induction n as [|n']; intros st [Hx Hy].
+
+  Case "n=0".
+    exists st. split. apply multi_refl. omega.
+
+  Case "n=S n'".
+    assert (exists st' : state, par_loop / st ==>* par_loop / st' /\ st' X = n' /\ st' Y = 0)
+      by auto. inversion H as [st' [Hstep [Hx1 Hy1]]].
+    exists (update st' X (S n')). split. eapply multi_trans. apply Hstep.
+    apply par_body_n__Sn. auto.
+    auto.
+Qed.
 (** [] *)
 
 (** ... the above loop can exit with [X] having any value

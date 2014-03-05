@@ -217,7 +217,16 @@ Qed.
 Lemma value_is_nf : forall t,
   value t -> step_normal_form t.
 Proof.
-  (* FILL IN HERE *) Admitted.
+  intros t Hv; inversion Hv; clear Hv; unfold normal_form, not.
+  Case "bvalue".
+    inversion H; intros; inversion H1; inversion H2.
+  Case "nvalue".
+    induction H.
+    SCase "tzero".
+      intros. inversion H. inversion H0.
+    SCase "IH".
+      intros. apply IHnvalue. inversion H0. inversion H1. exists t1'. assumption.
+Qed.
 (** [] *)
 
 (** **** Exercise: 3 stars, optional (step_deterministic) *)
@@ -227,6 +236,7 @@ Proof.
 Theorem step_deterministic:
   deterministic step.
 Proof with eauto.
+
   (* FILL IN HERE *) Admitted.
 (** [] *)
 

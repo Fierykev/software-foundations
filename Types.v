@@ -534,17 +534,28 @@ Proof with auto.
          intros t' HE;
          (* and we can deal with several impossible
             cases all at once *)
-         try (solve by inversion).
-    Case "T_If". inversion HE; subst.
+         try (solve by inversion);
+         (* we need to invert HE in all other cases *)
+         inversion HE; subst.
+    Case "T_If". (* inversion HE; subst. *)
       SCase "ST_IFTrue". assumption.
       SCase "ST_IfFalse". assumption.
       SCase "ST_If". apply T_If; try assumption.
         apply IHHT1; assumption.
-    Case "T_Succ". inversion HE; subst. apply IHHT in H0. apply T_Succ in H0. assumption.
-    Case "T_Pred". inversion HE; subst. constructor. inversion HT. assumption. apply IHHT in H0.
-      apply T_Pred in H0. assumption.
-    Case "T_Iszero". inversion HE; subst. constructor. constructor. apply IHHT in H0.
-      apply T_Iszero in H0. assumption.
+    Case "T_Succ".
+      SCase "ST_Succ".
+        apply IHHT in H0. apply T_Succ in H0. assumption.
+    Case "T_Pred".
+      SCase "ST_PredZero".
+        constructor.
+      SCase "ST_PredSucc".
+        inversion HT. assumption.
+      SCase "ST_Pred".
+        apply IHHT in H0. apply T_Pred in H0. assumption.
+    Case "T_Iszero".
+      SCase "ttrue". constructor.
+      SCase "tfalse". constructor.
+      SCase "t1 ==> t1'". apply IHHT in H0. apply T_Iszero in H0. assumption.
 Qed.
 (** [] *)
 
@@ -553,7 +564,13 @@ Qed.
 
 (** _Theorem_: If [|- t \in T] and [t ==> t'], then [|- t' \in T]. *)
 
-(** _Proof_: By induction on a derivation of [|- t \in T].
+(** _Proof_: By induction on a derivation of [|- t \in T], for each constructor
+        of the 'has_type' inductive type we need to show the objective
+        [|- t' \in T] assuming that t was obtained with this constructor and the
+        preconditions of the constructor become our inductive hypothesis.
+
+      - The constructors T_False and T_True can be ruled out immediately, because
+        there are no t' such that ttrue ==> t' or tfalse ==> t'.
 
       - If the last rule in the derivation is [T_If], then [t = if t1
         then t2 else t3], with [|- t1 \in Bool], [|- t2 \in T] and [|- t3
@@ -575,7 +592,23 @@ Qed.
              by the IH, [|- t1' \in Bool].  The [T_If] rule then gives us
              [|- if t1' then t2 else t3 \in T], as required.
 
-    (* FILL IN HERE *)
+      - If the last rule in the derivation of t's type is [T_Succ] then
+        t must have the form [succ t1] where [|-t1 \in Nat]. Therefore
+        [t ==> t'] must have the form [succ t1 ==> succ t1'] and thus
+        must be obtained by [ST_Succ]. By the induction hypothesis
+        [|- t1' \in Nat] for any [t1'] such that [t1 ==> t1']. Therefore by
+        [T_Succ] [|- t' = succ t1' \in Nat].
+
+      - If the last rule in the derivation of t's type is [T_Pred], [t] must
+        have the form [pred 0] ([ST_PredZero]), [pred (succ v1)] ([ST_PredSucc])
+        or [pred t1] ([ST_Pred]). In the first case we must show that 0 has
+        type Nat, which is trivial. In the second, we must show that given
+        v1 has type Nat so has pred (succ v1) ==> v1, which is again trivial.
+        In the last case we must show that for t1 ==> t1', pred t1 ==> pred t1'
+        has the right type, which follows from an application of the induction
+        hypothesis (to show that t1' has type Nat) and an application of ST_Pred.
+
+      - Similar to the previous case.
 []
 *)
 

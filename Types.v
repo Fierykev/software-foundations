@@ -192,7 +192,12 @@ Hint Unfold stuck.
 Example some_term_is_stuck :
   exists t, stuck t.
 Proof.
-  (* FILL IN HERE *) Admitted.
+  exists (tsucc ttrue). unfold stuck. split.
+  Case "normal_form".
+    unfold normal_form, not. intro Contra. inversion Contra. inversion H. inversion H1.
+  Case "~ value".
+    unfold not. intro Contra. inversion Contra. inversion H. inversion H. inversion H1.
+Qed.
 (** [] *)
 
 (** However, although values and normal forms are not the same in this

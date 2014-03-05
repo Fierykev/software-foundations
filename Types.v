@@ -232,12 +232,46 @@ Qed.
 (** **** Exercise: 3 stars, optional (step_deterministic) *)
 (** Using [value_is_nf], we can show that the [step] relation is
     also deterministic... *)
+(*
+  Case := "ST_PredSucc" : String.string
+  t1 : tm
+  H : nvalue t1
+  y2 : tm
+  H0 : tpred (tsucc t1) ==> y2
+  t0 : tm
+  t1' : tm
+  H2 : tsucc t1 ==> t1'
+  H1 : t0 = tsucc t1
+  H3 : tpred t1' = y2
+  ============================
+   t1 = tpred t1'
+*)
+Lemma nvalue_cannot_succ : forall t t',
+  nvalue t -> ~(tsucc t ==> t').
+Proof.
+  intros t t' Hnv. assert (value t). right. assumption.
+  apply value_is_nf in H. unfold normal_form,not in H.
+  unfold not. intro. inversion H0. subst. apply H. exists t1'. assumption.
+Qed.
 
 Theorem step_deterministic:
   deterministic step.
 Proof with eauto.
-
-  (* FILL IN HERE *) Admitted.
+  unfold deterministic. intros x y1 y2 H1. generalize dependent y2.
+  step_cases (induction H1) Case; intros.
+  Case "ST_IfTrue". inversion H; subst. reflexivity. inversion H4.
+  Case "ST_IfFalse". inversion H; subst. reflexivity. inversion H4.
+  Case "ST_If". inversion H; subst. inversion H1. inversion H1. apply IHstep in H5. rewrite H5. reflexivity.
+  Case "ST_Succ". inversion H; subst. apply IHstep in H2. rewrite H2. reflexivity.
+  Case "ST_PredZero". inversion H.  reflexivity. inversion H1. inversion H0. reflexivity.
+    assert (value t1). right. assumption. eapply nvalue_cannot_succ in H. apply H in H2. inversion H2.
+  Case "ST_Pred". inversion H; subst. inversion H1. eapply nvalue_cannot_succ in H1. inversion H1. assumption.
+    apply IHstep in H2. rewrite H2. reflexivity.
+  Case "ST_IszeroZero". inversion H; subst. reflexivity. inversion H1.
+  Case "ST_IszeroSucc". inversion H0. reflexivity. apply nvalue_cannot_succ in H2. inversion H2. assumption.
+  Case "ST_Iszero". inversion H. rewrite <- H2 in H1. inversion H1. subst. apply nvalue_cannot_succ in H1. inversion H1. assumption.
+    apply IHstep in H2. rewrite H2. reflexivity.
+Qed.
 (** [] *)
 
 
@@ -353,7 +387,8 @@ Example succ_hastype_nat__hastype_nat : forall t,
   |- tsucc t \in TNat ->
   |- t \in TNat.
 Proof.
-  (* FILL IN HERE *) Admitted.
+  intros. inversion H. assumption.
+Qed.
 (** [] *)
 
 (* ###################################################################### *)
@@ -389,7 +424,31 @@ Proof with auto.
     SCase "t1 can take a step".
       inversion H as [t1' H1].
       exists (tif t1' t2 t3)...
-  (* FILL IN HERE *) Admitted.
+  Case "T_Succ".
+    inversion IHHT; clear IHHT.
+    SCase "t1 is a value". inversion H; clear H.
+      SSCase "t1 is a bvalue".
+        solve by inversion 2.
+      SSCase "t1 is an nvalue".
+        left. auto.
+    SCase "t1 steps".
+      inversion H as [t1' Hstep].
+      right. exists (tsucc t1'). constructor. assumption.
+  Case "T_Pred".
+    right. inversion IHHT; clear IHHT.
+    SCase "t1 is a value".
+      inversion H; clear H. solve by inversion 2.
+      inversion H0; clear H0. exists tzero. constructor. exists t. constructor. assumption.
+    SCase "t1 steps".
+      inversion H; clear H. exists (tpred x). constructor. assumption.
+  Case "T_Iszero".
+    right; inversion IHHT; clear IHHT.
+    SCase "t1 is a value".
+      inversion H. solve by inversion 2. inversion H0; clear H0.
+      exists ttrue. constructor. exists tfalse. constructor. assumption.
+    SCase "t1 steps".
+      inversion H. exists (tiszero x). constructor. assumption.
+Qed.
 (** [] *)
 
 (** **** Exercise: 3 stars, advanced (finish_progress_informal) *)
@@ -430,13 +489,17 @@ Proof with auto.
 (** **** Exercise: 1 star (step_review) *)
 (** Quick review.  Answer _true_ or _false_.  In this language...
       - Every well-typed normal form is a value.
+        TRUE.
 
       - Every value is a normal form.
+        TRUE.
 
       - The single-step evaluation relation is
         a partial function (i.e., it is deterministic).
+        TRUE.
 
       - The single-step evaluation relation is a _total_ function.
+        FALSE (things can get stuck if they are ill typed).
 
 *)
 (** [] *)
@@ -477,7 +540,12 @@ Proof with auto.
       SCase "ST_IfFalse". assumption.
       SCase "ST_If". apply T_If; try assumption.
         apply IHHT1; assumption.
-    (* FILL IN HERE *) Admitted.
+    Case "T_Succ". inversion HE; subst. apply IHHT in H0. apply T_Succ in H0. assumption.
+    Case "T_Pred". inversion HE; subst. constructor. inversion HT. assumption. apply IHHT in H0.
+      apply T_Pred in H0. assumption.
+    Case "T_Iszero". inversion HE; subst. constructor. constructor. apply IHHT in H0.
+      apply T_Iszero in H0. assumption.
+Qed.
 (** [] *)
 
 (** **** Exercise: 3 stars, advanced (finish_preservation_informal) *)

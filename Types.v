@@ -625,7 +625,11 @@ Theorem preservation' : forall t t' T,
   t ==> t' ->
   |- t' \in T.
 Proof with eauto.
-  (* FILL IN HERE *) Admitted.
+  intros t t' T HT HE. generalize dependent HT. generalize dependent T.
+  step_cases (induction HE) Case; intros T HT; inversion HT; subst; clear HT; auto.
+
+  Case "ST_PredSucc". inversion H1. assumption.
+Qed.
 (** [] *)
 
 (* ###################################################################### *)

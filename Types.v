@@ -727,8 +727,8 @@ Theorem normalize_ex : exists e',
   (AMult (ANum 3) (AMult (ANum 2) (ANum 1))) / empty_state
   ==>a* e'.
 Proof.
-  (* FILL IN HERE *) Admitted.
-
+  eexists. normalize.
+Qed.
 (** [] *)
 
 (** **** Exercise: 1 star, optional (normalize_ex') *)
@@ -738,7 +738,10 @@ Theorem normalize_ex' : exists e',
   (AMult (ANum 3) (AMult (ANum 2) (ANum 1))) / empty_state
   ==>a* e'.
 Proof.
-  (* FILL IN HERE *) Admitted.
+  eexists.
+  apply multi_step with (AMult (ANum 3) (ANum 2)). apply AS_Mult2. apply av_num. apply AS_Mult.
+  apply multi_step with (ANum 6). apply AS_Mult. apply multi_refl.
+Qed.
 (** [] *)
 
 (* ###################################################################### *)
@@ -757,7 +760,7 @@ Corollary soundness : forall t t' T,
 Proof.
   intros t t' T HT P. induction P; intros [R S].
   destruct (progress x T HT); auto.
-  apply IHP.  apply (preservation x y T HT H).
+  apply IHP. apply (preservation x y T HT H).
   unfold stuck. split; auto.   Qed.
 
 (* ###################################################################### *)
@@ -774,9 +777,15 @@ Proof.
     (* FILL IN HERE *)
 []
 *)
-
-
-
+Theorem not_preservation_inv : forall t T,
+  |- t \in T -> exists t', t' ==> t /\ ~ (|- t' \in T).
+Proof.
+  intros t T HT. destruct T.
+  Case "TBool". exists (tif ttrue t tzero).
+    split. auto. unfold not. intro. inversion H. subst. inversion H6.
+  Case "TNat". exists (tif ttrue t ttrue).
+    split. auto. unfold not. intro. inversion H. subst. inversion H6.
+Qed.
 
 (** **** Exercise: 2 stars (variation1) *)
 (** Suppose, that we add this new rule to the typing relation:

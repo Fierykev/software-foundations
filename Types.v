@@ -787,6 +787,12 @@ Proof.
     split. auto. unfold not. intro. inversion H. subst. inversion H6.
 Qed.
 
+(*
+Determinism: stepping is deterministic
+Progress: Each well-typed term is either a value or can be reduced.
+Preservation: The type of a term is perserved when it steps.
+*)
+
 (** **** Exercise: 2 stars (variation1) *)
 (** Suppose, that we add this new rule to the typing relation:
       | T_SuccBool : forall t,
@@ -797,11 +803,15 @@ Qed.
    else "becomes false." If a property becomes false, give a
    counterexample.
       - Determinism of [step]
+        remains true (no overlap in the requirements of constructors).
 
       - Progress
+        becomes false, because no terms typecheck which can not be
+        reduced to values, e.g. (tsucc ttrue).
 
       - Preservation
-
+        remains true because terms of type bool reduce to terms of type
+        bool which will still typecheck with this new rule.
 []
 *)
 
@@ -812,6 +822,9 @@ Qed.
    Which of the above properties become false in the presence of
    this rule?  For each one that does, give a counter-example.
 
+       - Determinism no longer holds (tif ttrue 0 1 ==> 0 /\ tif true 0 1 ==> 1)
+       - Progress still holds.
+       - Preservation still holds.
 []
 *)
 
@@ -823,6 +836,11 @@ Qed.
    Which of the above properties become false in the presence of
    this rule?  For each one that does, give a counter-example.
 
+       - Determinism no longer holds
+          (tif (tiszero 0) (tsucc 0) 0 ==> tif ttrue (tsucc 0) 0 /\
+           tif (tiszero 0) (tsucc 0) 0 ==> tif (tiszero 0) 1 0)
+       - Progress still holds.
+       - Preservation still holds.
 []
 *)
 
@@ -832,7 +850,12 @@ Qed.
           (tpred tfalse) ==> (tpred (tpred tfalse))
    Which of the above properties become false in the presence of
    this rule?  For each one that does, give a counter-example.
+   - Determinism still holds (no overlapping preconditions)
+   - Progress still holds (because tpred tfalse is not well-typed)
+   - Preservation still holds
 
+   I think the thing that doesn't hold in this case anymore is that
+   progress for example only works for well typed terms.
 []
 *)
 
@@ -844,7 +867,11 @@ Qed.
    ]]
    Which of the above properties become false in the presence of
    this rule?  For each one that does, give a counter-example.
-
+   - Determinism is still OK
+   - Porgress no longer holds (e.g. tif tzero ...)
+   - Preservation still holds? I mean we can get terms that
+     are first of type TNat and then have both type TNat and TBool
+     but they still have TNat (among others).
 []
 *)
 
@@ -857,6 +884,19 @@ Qed.
    Which of the above properties become false in the presence of
    this rule?  For each one that does, give a counter-example.
 
+   - Determinism still holds
+     (always when we introduce typing rules?)
+
+   - Progress ... still holds (?) While the terms are still well-typed
+     we can still make progress, we may only obtain an ill-typed term
+     which will prevent us from further making progress. But this term
+     is now ill-typed so the precedent of the progress theorem is not
+     given.
+
+   - Preservation doesn't hold, because
+     |- tpred tzero \in TBool,
+     tpred tzero ==> tzero,
+     ~ (|- tzero \in TBool)
 []
 *)
 
@@ -865,6 +905,34 @@ Qed.
     the ones above.  Try to find ways of selectively breaking
     properties -- i.e., ways of changing the definitions that
     break just one of the properties and leave the others alone.
+
+    (a)
+      | ST_IfFunny :
+        tif t1 t2 t2 ==> t2
+    - Determinism doesn't hold, there are two ways to reduce
+        tif (tiszero tzero) tzero tzero.
+    - Progress holds
+    - Preservation holds
+
+    (b)
+    - Determinism holds
+    - Progress doesn't hold (well-typed terms can get stuck)
+    - Preservation holds (if we can reduce the type stays the same)
+
+      -> One way to do this is to introduce a typing rule for something
+         where progress isn't possible.
+
+      | T_TrueNat :
+        |- ttrue \in TNat
+
+    (c)
+    - Determinims holds
+    - Progress holds (well-typed terms can't get stuck)
+    - Preservation doesn't hold (type of terms change as we reduce)
+
+    -> one way to do this is to add an additional type to something
+       that reduces to something else, like
+       [|- tif t1 t2 t3 \in TNat] regardless of what types t2 and t3 have.
     []
 *)
 
@@ -875,7 +943,10 @@ Qed.
     achieve this simply by removing the rule from the definition of
     [step]?  Would doing so create any problems elsewhere?
 
-(* FILL IN HERE *)
+    Terms could get stuck (progress doesn't hold anymore), because
+    tpred tzero is not a value but cannot be reduced. (defining
+    values for tpreds in the same way as for tsuccs would be tricky,
+    because we have to rule out that there is no (tpred (tsucc tzero)).
 [] *)
 
 (** **** Exercise: 4 stars, advanced (prog_pres_bigstep) *)
@@ -883,7 +954,12 @@ Qed.
     What are the appropriate analogs of the progress and preservation
     properties?
 
-(* FILL IN HERE *)
+Theorem progress' : forall t T,
+  |- t \in T ->
+  exists t',  t ==>* t' /\ value t'.
+
+Theorem preservation' : forall t t' T,
+  |- t \in T -> t ==>* t' -> |- t' \in T.
 []
 *)
 

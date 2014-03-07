@@ -801,10 +801,13 @@ Qed.
 (** **** Exercise: 2 stars (typing_example_3) *)
 (** Formally prove the following typing derivation holds: *)
 (**
-   empty |- \x:Bool->B. \y:Bool->Bool. \z:Bool.
+   empty |- \x:Bool->Bool. \y:Bool->Bool. \z:Bool.
                y (x z)
          \in T.
 *)
+
+Tactic Notation "solve_neq" :=
+  unfold not; intro Contra; inversion Contra.
 
 Example typing_example_3 :
   exists T,
@@ -815,7 +818,14 @@ Example typing_example_3 :
                (tapp (tvar y) (tapp (tvar x) (tvar z)))))) \in
       T.
 Proof with auto.
-  (* FILL IN HERE *) Admitted.
+  exists (TArrow (TArrow TBool TBool) (TArrow (TArrow TBool TBool) (TArrow TBool TBool))).
+  apply T_Abs.
+  apply T_Abs.
+  apply T_Abs.
+  apply T_App with (T11:=TBool). apply T_Var. apply extend_neq. solve_neq.
+  apply T_App with (T11:=TBool). apply T_Var. apply extend_neq. solve_neq.
+  apply T_Var. apply extend_eq.
+Qed.
 (** [] *)
 
 (** We can also show that terms are _not_ typable.  For example, let's

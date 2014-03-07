@@ -617,9 +617,15 @@ Lemma step_example5 :
        (tapp (tapp idBBBB idBB) idB)
   ==>* idB.
 Proof.
-  (* FILL IN HERE *) Admitted.
+  eapply multi_step. apply ST_App1. apply ST_AppAbs. auto. simpl.
+  eapply multi_step. apply ST_AppAbs. auto. simpl.
+  apply multi_refl.
+Qed.
 
-(* FILL IN HERE *)
+Lemma step_example5' :
+       (tapp (tapp idBBBB idBB) idB)
+  ==>* idB.
+Proof. normalize. Qed.
 (** [] *)
 
 (* ###################################################################### *)

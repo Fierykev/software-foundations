@@ -9,7 +9,7 @@ Require Export Types.
     embodying the key concept of _functional abstraction_, which shows
     up in pretty much every real-world programming language in some
     form (functions, procedures, methods, etc.).
-    
+
     We will follow exactly the same pattern as in the previous
     chapter when formalizing this calculus (syntax, small-step
     semantics, typing rules) and its main properties (progress and
@@ -40,7 +40,7 @@ Require Export Types.
 
 *)
 
-(** Informal concrete syntax: 
+(** Informal concrete syntax:
        t ::= x                       variable
            | \x:T1.t2                abstraction
            | t1 t2                   application
@@ -74,7 +74,7 @@ Require Export Types.
 
         The constant function that takes every (boolean) argument to
         [true]. *)
-(**  
+(**
       - [\x:Bool. \y:Bool. x]
 
         A two-argument function that takes two booleans and returns
@@ -105,13 +105,13 @@ Require Export Types.
 (** As the last several examples show, the STLC is a language of
     _higher-order_ functions: we can write down functions that take
     other functions as arguments and/or return other functions as
-    results.  
+    results.
 
     Another point to note is that the STLC doesn't provide any
     primitive syntax for defining _named_ functions -- all functions
     are "anonymous."  We'll see in chapter [MoreStlc] that it is easy
     to add named functions to what we've got -- indeed, the
-    fundamental naming and binding mechanisms are exactly the same.  
+    fundamental naming and binding mechanisms are exactly the same.
 
     The _types_ of the STLC include [Bool], which classifies the
     boolean constants [true] and [false] as well as more complex
@@ -147,8 +147,8 @@ Module STLC.
 (* ################################### *)
 (** *** Types *)
 
-Inductive ty : Type := 
-  | TBool  : ty 
+Inductive ty : Type :=
+  | TBool  : ty
   | TArrow : ty -> ty -> ty.
 
 (* ################################### *)
@@ -164,8 +164,8 @@ Inductive tm : Type :=
 
 Tactic Notation "t_cases" tactic(first) ident(c) :=
   first;
-  [ Case_aux c "tvar" | Case_aux c "tapp" 
-  | Case_aux c "tabs" | Case_aux c "ttrue" 
+  [ Case_aux c "tvar" | Case_aux c "tapp"
+  | Case_aux c "tabs" | Case_aux c "ttrue"
   | Case_aux c "tfalse" | Case_aux c "tif" ].
 
 (** Note that an abstraction [\x:T.t] (formally, [tabs x T t]) is
@@ -185,19 +185,19 @@ Hint Unfold z.
 
 (** [idB = \x:Bool. x] *)
 
-Notation idB := 
+Notation idB :=
   (tabs x TBool (tvar x)).
 
 (** [idBB = \x:Bool->Bool. x] *)
 
-Notation idBB := 
+Notation idBB :=
   (tabs x (TArrow TBool TBool) (tvar x)).
 
 (** [idBBBB = \x:(Bool->Bool) -> (Bool->Bool). x] *)
 
 Notation idBBBB :=
-  (tabs x (TArrow (TArrow TBool TBool) 
-                      (TArrow TBool TBool)) 
+  (tabs x (TArrow (TArrow TBool TBool)
+                      (TArrow TBool TBool))
     (tvar x)).
 
 (** [k = \x:Bool. \y:Bool. x] *)
@@ -248,7 +248,7 @@ Notation notB := (tabs x TBool (tif (tvar x) tfalse ttrue)).
     Coq, in its built-in functional programming langauge, makes the
     first choice -- for example,
          Eval simpl in (fun x:bool => 3 + 4)
-    yields [fun x:bool => 7].  
+    yields [fun x:bool => 7].
 
     Most real-world functional programming languages make the second
     choice -- reduction of a function's body only begins when the
@@ -264,9 +264,9 @@ Notation notB := (tabs x TBool (tif (tvar x) tfalse ttrue)).
 Inductive value : tm -> Prop :=
   | v_abs : forall x T t,
       value (tabs x T t)
-  | v_true : 
+  | v_true :
       value ttrue
-  | v_false : 
+  | v_false :
       value tfalse.
 
 Hint Constructors value.
@@ -283,11 +283,11 @@ Hint Constructors value.
     substitute the argument term for the function parameter in the
     function's body.  For example, we reduce
        (\x:Bool. if x then true else x) false
-    to 
+    to
        if false then true else false
-]] 
+]]
     by substituting [false] for the parameter [x] in the body of the
-    function.  
+    function.
 
     In general, we need to be able to substitute some given
     term [s] for occurrences of some variable [x] in another term [t].
@@ -322,31 +322,31 @@ Hint Constructors value.
 (** Here is the definition, informally...
    [x:=s]x = s
    [x:=s]y = y                                   if x <> y
-   [x:=s](\x:T11.t12)   = \x:T11. t12      
+   [x:=s](\x:T11.t12)   = \x:T11. t12
    [x:=s](\y:T11.t12)   = \y:T11. [x:=s]t12      if x <> y
-   [x:=s](t1 t2)        = ([x:=s]t1) ([x:=s]t2)       
+   [x:=s](t1 t2)        = ([x:=s]t1) ([x:=s]t2)
    [x:=s]true           = true
    [x:=s]false          = false
-   [x:=s](if t1 then t2 else t3) = 
+   [x:=s](if t1 then t2 else t3) =
                    if [x:=s]t1 then [x:=s]t2 else [x:=s]t3
-]]  
+]]
     ... and formally: *)
 
 Reserved Notation "'[' x ':=' s ']' t" (at level 20).
 
 Fixpoint subst (x:id) (s:tm) (t:tm) : tm :=
   match t with
-  | tvar x' => 
+  | tvar x' =>
       if eq_id_dec x x' then s else t
-  | tabs x' T t1 => 
-      tabs x' T (if eq_id_dec x x' then t1 else ([x:=s] t1)) 
-  | tapp t1 t2 => 
+  | tabs x' T t1 =>
+      tabs x' T (if eq_id_dec x x' then t1 else ([x:=s] t1))
+  | tapp t1 t2 =>
       tapp ([x:=s] t1) ([x:=s] t2)
-  | ttrue => 
+  | ttrue =>
       ttrue
-  | tfalse => 
+  | tfalse =>
       tfalse
-  | tif t1 t2 t3 => 
+  | tif t1 t2 t3 =>
       tif ([x:=s] t1) ([x:=s] t2) ([x:=s] t3)
   end
 
@@ -362,7 +362,7 @@ where "'[' x ':=' s ']' t" := (subst x s t).
     formalizing richer languages. *)
 
 (** *** *)
-(** **** Exercise: 3 stars (substi) *)  
+(** **** Exercise: 3 stars (substi) *)
 
 (** The definition that we gave above uses Coq's [Fixpoint] facility
     to define substitution as a _function_.  Suppose, instead, we
@@ -371,18 +371,72 @@ where "'[' x ':=' s ']' t" := (subst x s t).
     one of the constructors; your job is to fill in the rest of the
     constructors. *)
 
-Inductive substi (s:tm) (x:id) : tm -> tm -> Prop := 
-  | s_var1 : 
+Inductive substi (s:tm) (x:id) : tm -> tm -> Prop :=
+  | s_var1 :
       substi s x (tvar x) s
-  (* FILL IN HERE *)
+  | s_var2 : forall y:id,
+      x <> y -> substi s x (tvar y) (tvar y)
+  | s_abs1 : forall T t,
+      substi s x (tabs x T t) (tabs x T t)
+  | s_abs2 : forall y T t t',
+      x <> y ->
+      substi s x t t' ->
+      substi s x (tabs y T t) (tabs y T t')
+  | s_app : forall t1 t2 t1' t2',
+      substi s x t1 t1' ->
+      substi s x t2 t2' ->
+      substi s x (tapp t1 t2) (tapp t1' t2')
+  | s_true : substi s x ttrue ttrue
+  | s_false : substi s x tfalse tfalse
+  | s_if : forall t1 t1' t2 t2' t3 t3',
+      substi s x t1 t1' ->
+      substi s x t2 t2' ->
+      substi s x t3 t3' ->
+      substi s x (tif t1 t2 t3) (tif t1' t2' t3')
 .
 
 Hint Constructors substi.
 
 Theorem substi_correct : forall s x t t',
   [x:=s]t = t' <-> substi s x t t'.
-Proof.
-  (* FILL IN HERE *) Admitted.
+Proof. intros s x t t'. split.
+  Case "->". generalize dependent t'.
+    t_cases (induction t) SCase; intros.
+      SCase "tvar". unfold subst in H. destruct (eq_id_dec x i); subst.
+        apply s_var1. apply s_var2. assumption.
+      SCase "tapp".
+        replace ([x := s]tapp t1 t2) with (tapp ([x := s]t1) ([x := s] t2)) in H by reflexivity.
+        rewrite <- H. constructor. apply IHt1. reflexivity. apply IHt2. reflexivity.
+      SCase "tabs".
+        unfold subst in H.
+        destruct (eq_id_dec x i).
+          SSCase "x=i". rewrite <- H. subst. constructor.
+          SSCase "x<>i". fold subst in H. rewrite <- H. constructor. assumption. apply IHt. reflexivity.
+      SCase "ttrue".
+        simpl in H. rewrite <- H. constructor.
+      SCase "tfalse".
+        simpl in H. rewrite <- H. constructor.
+      SCase "tif".
+        rewrite <- H.
+        replace ([x := s]tif t1 t2 t3) with (tif ([x := s]t1) ([x := s]t2) ([x := s]t3)) by reflexivity.
+        constructor. auto. auto. auto.
+  Case "<-". generalize dependent t'.
+    t_cases (induction t) SCase; intros.
+      SCase "tvar". inversion H; subst; unfold subst.
+        SSCase "x=i". destruct (eq_id_dec i i). reflexivity. apply ex_falso_quodlibet. apply n. reflexivity.
+        SSCase "x<>i". destruct (eq_id_dec x i). unfold not in H1. apply H1 in e. inversion e. reflexivity.
+      SCase "tapp". inversion H; subst; clear H. apply IHt1 in H2. apply IHt2 in H4.
+        replace ([x := s]tapp t1 t2) with (tapp ([x := s]t1) ([x := s]t2)) by reflexivity. rewrite H2. rewrite H4. reflexivity.
+      SCase "tabs". inversion H; subst.
+        SSCase "i=i". unfold subst. destruct (eq_id_dec i i). reflexivity. contradiction n. reflexivity.
+        SSCase "x<>i". unfold subst. destruct (eq_id_dec x i). apply H4 in e. inversion e. fold subst.
+          apply IHt in H5. rewrite H5. reflexivity.
+      SCase "ttrue". inversion H. reflexivity.
+      SCase "tfalse". inversion H. reflexivity.
+      SCase "tif". inversion H; subst. apply IHt1 in H3. apply IHt2 in H5. apply IHt3 in H6.
+        replace ([x := s]tif t1 t2 t3) with (tif ([x := s]t1) ([x := s]t2) ([x := s]t3)) by reflexivity.
+        rewrite H3. rewrite H5. rewrite H6. reflexivity.
+Qed.
 (** [] *)
 
 (* ################################### *)
@@ -398,7 +452,7 @@ Proof.
       (\x:T.t12) v2 ==> [x:=v2]t12
     is traditionally called "beta-reduction". *)
 
-(** 
+(**
                                value v2
                      ----------------------------                   (ST_AppAbs)
                      (\x:T.t12) v2 ==> [x:=v2]t12
@@ -435,7 +489,7 @@ Inductive step : tm -> tm -> Prop :=
          tapp t1 t2 ==> tapp t1' t2
   | ST_App2 : forall v1 t2 t2',
          value v1 ->
-         t2 ==> t2' -> 
+         t2 ==> t2' ->
          tapp v1 t2 ==> tapp v1  t2'
   | ST_IfTrue : forall t1 t2,
       (tif ttrue t1 t2) ==> t1
@@ -449,8 +503,8 @@ where "t1 '==>' t2" := (step t1 t2).
 
 Tactic Notation "step_cases" tactic(first) ident(c) :=
   first;
-  [ Case_aux c "ST_AppAbs" | Case_aux c "ST_App1" 
-  | Case_aux c "ST_App2" | Case_aux c "ST_IfTrue" 
+  [ Case_aux c "ST_AppAbs" | Case_aux c "ST_App1"
+  | Case_aux c "ST_App2" | Case_aux c "ST_IfTrue"
   | Case_aux c "ST_IfFalse" | Case_aux c "ST_If" ].
 
 Hint Constructors step.
@@ -474,10 +528,10 @@ Proof.
     apply ST_AppAbs.
     apply v_abs.
   simpl.
-  apply multi_refl.  Qed.  
+  apply multi_refl.  Qed.
 
 (** Example:
-((\x:Bool->Bool. x) ((\x:Bool->Bool. x) (\x:Bool. x))) 
+((\x:Bool->Bool. x) ((\x:Bool->Bool. x) (\x:Bool. x)))
       ==>* (\x:Bool. x)
 i.e.
   (idBB (idBB idB)) ==>* idB.
@@ -491,7 +545,7 @@ Proof.
     apply ST_AppAbs. auto.
   eapply multi_step.
     apply ST_AppAbs. simpl. auto.
-  simpl. apply multi_refl.  Qed. 
+  simpl. apply multi_refl.  Qed.
 
 (** Example:
 ((\x:Bool->Bool. x) (\x:Bool. if x then false
@@ -503,13 +557,13 @@ i.e.
 
 Lemma step_example3 :
   tapp (tapp idBB notB) ttrue ==>* tfalse.
-Proof. 
+Proof.
   eapply multi_step.
     apply ST_App1. apply ST_AppAbs. auto. simpl.
   eapply multi_step.
     apply ST_AppAbs. auto. simpl.
   eapply multi_step.
-    apply ST_IfTrue. apply multi_refl.  Qed. 
+    apply ST_IfTrue. apply multi_refl.  Qed.
 
 (** Example:
 ((\x:Bool->Bool. x) ((\x:Bool. if x then false
@@ -521,23 +575,23 @@ i.e.
 
 Lemma step_example4 :
   tapp idBB (tapp notB ttrue) ==>* tfalse.
-Proof. 
+Proof.
   eapply multi_step.
-    apply ST_App2. auto. 
+    apply ST_App2. auto.
     apply ST_AppAbs. auto. simpl.
   eapply multi_step.
-    apply ST_App2. auto. 
-    apply ST_IfTrue. 
+    apply ST_App2. auto.
+    apply ST_IfTrue.
   eapply multi_step.
     apply ST_AppAbs. auto. simpl.
-  apply multi_refl.  Qed. 
+  apply multi_refl.  Qed.
 
 
 (** A more automatic proof *)
 
 Lemma step_example1' :
   (tapp idBB idB) ==>* idB.
-Proof. normalize.  Qed.  
+Proof. normalize.  Qed.
 
 (** Again, we can use the [normalize] tactic from above to simplify
     the proof. *)
@@ -546,17 +600,17 @@ Lemma step_example2' :
   (tapp idBB (tapp idBB idB)) ==>* idB.
 Proof.
   normalize.
-Qed. 
+Qed.
 
 Lemma step_example3' :
   tapp (tapp idBB notB) ttrue ==>* tfalse.
-Proof. normalize.  Qed.  
+Proof. normalize.  Qed.
 
 Lemma step_example4' :
   tapp idBB (tapp notB ttrue) ==>* tfalse.
-Proof. normalize.  Qed.  
+Proof. normalize.  Qed.
 
-(** **** Exercise: 2 stars (step_example3) *)  
+(** **** Exercise: 2 stars (step_example3) *)
 (** Try to do this one both with and without [normalize]. *)
 
 Lemma step_example5 :
@@ -576,7 +630,7 @@ Proof.
 
 (** _Question_: What is the type of the term "[x y]"?
 
-    _Answer_: It depends on the types of [x] and [y]!  
+    _Answer_: It depends on the types of [x] and [y]!
 
     I.e., in order to assign a type to a term, we need to know
     what assumptions we should make about the types of its free
@@ -593,7 +647,7 @@ Module PartialMap.
 
 Definition partial_map (A:Type) := id -> option A.
 
-Definition empty {A:Type} : partial_map A := (fun _ => None). 
+Definition empty {A:Type} : partial_map A := (fun _ => None).
 
 (** Informally, we'll write [Gamma, x:T] for "extend the partial
     function [Gamma] to also map [x] to [T]."  Formally, we use the
@@ -609,7 +663,7 @@ Proof.
 Qed.
 
 Lemma extend_neq : forall A (ctxt: partial_map A) x1 T x2,
-  x2 <> x1 ->                       
+  x2 <> x1 ->
   (extend ctxt x2 T) x1 = ctxt x1.
 Proof.
   intros. unfold extend. rewrite neq_id; auto.
@@ -622,7 +676,7 @@ Definition context := partial_map ty.
 (* ################################### *)
 (** *** Typing Relation *)
 
-(** 
+(**
                              Gamma x = T
                             --------------                              (T_Var)
                             Gamma |- x \in T
@@ -647,23 +701,23 @@ Definition context := partial_map ty.
                   Gamma |- if t1 then t2 else t3 \in T
 
 
-    We can read the three-place relation [Gamma |- t \in T] as: 
+    We can read the three-place relation [Gamma |- t \in T] as:
     "to the term [t] we can assign the type [T] using as types for
-    the free variables of [t] the ones specified in the context 
+    the free variables of [t] the ones specified in the context
     [Gamma]." *)
 
 Reserved Notation "Gamma '|-' t '\in' T" (at level 40).
-    
+
 Inductive has_type : context -> tm -> ty -> Prop :=
   | T_Var : forall Gamma x T,
       Gamma x = Some T ->
       Gamma |- tvar x \in T
   | T_Abs : forall Gamma x T11 T12 t12,
-      extend Gamma x T11 |- t12 \in T12 -> 
+      extend Gamma x T11 |- t12 \in T12 ->
       Gamma |- tabs x T11 t12 \in TArrow T11 T12
   | T_App : forall T11 T12 Gamma t1 t2,
-      Gamma |- t1 \in TArrow T11 T12 -> 
-      Gamma |- t2 \in T11 -> 
+      Gamma |- t1 \in TArrow T11 T12 ->
+      Gamma |- t2 \in T11 ->
       Gamma |- tapp t1 t2 \in T12
   | T_True : forall Gamma,
        Gamma |- ttrue \in TBool
@@ -679,8 +733,8 @@ where "Gamma '|-' t '\in' T" := (has_type Gamma t T).
 
 Tactic Notation "has_type_cases" tactic(first) ident(c) :=
   first;
-  [ Case_aux c "T_Var" | Case_aux c "T_Abs" 
-  | Case_aux c "T_App" | Case_aux c "T_True" 
+  [ Case_aux c "T_Var" | Case_aux c "T_Abs"
+  | Case_aux c "T_App" | Case_aux c "T_True"
   | Case_aux c "T_False" | Case_aux c "T_If" ].
 
 Hint Constructors has_type.
@@ -701,7 +755,7 @@ Example typing_example_1' :
 Proof. auto.  Qed.
 
 (** Another example:
-     empty |- \x:A. \y:A->A. y (y x)) 
+     empty |- \x:A. \y:A->A. y (y x))
            \in A -> (A->A) -> A.
 *)
 
@@ -735,14 +789,14 @@ Proof.
 
 (** **** Exercise: 2 stars (typing_example_3) *)
 (** Formally prove the following typing derivation holds: *)
-(** 
+(**
    empty |- \x:Bool->B. \y:Bool->Bool. \z:Bool.
-               y (x z) 
+               y (x z)
          \in T.
 *)
 
 Example typing_example_3 :
-  exists T, 
+  exists T,
     empty |-
       (tabs x (TArrow TBool TBool)
          (tabs y (TArrow TBool TBool)
@@ -762,7 +816,7 @@ Proof with auto.
 
 Example typing_nonexample_1 :
   ~ exists T,
-      empty |- 
+      empty |-
         (tabs x TBool
             (tabs y TBool
                (tapp (tvar x) (tvar y)))) \in
@@ -787,7 +841,7 @@ Proof.
 
 Example typing_nonexample_3 :
   ~ (exists S, exists T,
-        empty |- 
+        empty |-
           (tabs x S
              (tapp (tvar x) (tvar x))) \in
           T).
@@ -801,4 +855,3 @@ Proof.
 End STLC.
 
 (* $Date: 2013-07-18 09:59:22 -0400 (Thu, 18 Jul 2013) $ *)
-

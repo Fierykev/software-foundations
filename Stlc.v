@@ -758,7 +758,7 @@ Proof.
 
 Example typing_example_1' :
   empty |- tabs x TBool (tvar x) \in TArrow TBool TBool.
-Proof. auto.  Qed.
+Proof. auto. Qed.
 
 (** Another example:
      empty |- \x:A. \y:A->A. y (y x))
@@ -790,7 +790,12 @@ Example typing_example_2_full :
           (tapp (tvar y) (tapp (tvar y) (tvar x))))) \in
     (TArrow TBool (TArrow (TArrow TBool TBool) TBool)).
 Proof.
-  (* FILL IN HERE *) Admitted.
+  apply T_Abs.
+  apply T_Abs.
+  apply T_App with (T11:=TBool). apply T_Var. apply extend_eq.
+  apply T_App with (T11:=TBool). apply T_Var. apply extend_eq.
+  apply T_Var. apply extend_neq. unfold not. intros. inversion H.
+Qed.
 (** [] *)
 
 (** **** Exercise: 2 stars (typing_example_3) *)

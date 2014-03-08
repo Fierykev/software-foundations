@@ -860,6 +860,14 @@ Proof.
           empty |- \x:S. x x : T).
 *)
 
+Lemma no_infinite_nested_type :
+  ~ (exists T, exists S, T = TArrow T S).
+Proof.
+  intros Hc. inversion Hc as [T H]. clear Hc. induction T.
+  Case "TBool". inversion H. inversion H0.
+  Case "TArrow".  inversion H as [S' H1]. inversion H1. apply IHT1. exists T2. assumption.
+Qed.
+
 Example typing_nonexample_3 :
   ~ (exists S, exists T,
         empty |-
@@ -867,11 +875,15 @@ Example typing_nonexample_3 :
              (tapp (tvar x) (tvar x))) \in
           T).
 Proof.
-  (* FILL IN HERE *) Admitted.
+  intros Hc. inversion Hc as [S H]. clear Hc.
+  inversion H as [T H1]. subst.
+  inversion H1. subst. clear H1.
+  inversion H6. subst. clear H6.
+  inversion H3. subst. clear H3.
+  inversion H2. subst. inversion H5. subst. rewrite H2 in H3. inversion H3.
+  symmetry in H1. apply no_infinite_nested_type. exists T11. exists T12. assumption.
+Qed.
 (** [] *)
-
-
-
 
 End STLC.
 

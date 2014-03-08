@@ -128,22 +128,21 @@ Qed.
 Theorem progress' : forall t T,
      empty |- t \in T ->
      value t \/ exists t', t ==> t'.
-Proof.
+Proof with eauto.
   intros t.
   t_cases (induction t) Case; intros T Ht; auto.
   Case "tvar". inversion Ht. subst. inversion H1.
   Case "tapp". inversion Ht. subst. apply IHt1 in H2. apply IHt2 in H4.
-    inversion H2. right.
+    inversion H2; right.
     SCase "t1 is a value". inversion H4.
       SSCase "t2 is a value".
         inversion H; subst. exists ([x0:=t2]t). apply ST_AppAbs. assumption.
-
-        solve by inversion.
-        inversion Ht. subst.
-        admit.
-      SSCase "t2 can step". admit.
-    SCase "t1 can step". admit.
-  Case "tif". admit.
+        solve by inversion 2. solve by inversion 2.
+      SSCase "t2 can step".
+        inversion H0 as [t2' Ht2]. exists (tapp t1 t2'). apply ST_App2. auto. auto.
+    SCase "t1 can step".
+      inversion H as [t1' Ht1]. exists (tapp t1' t2). auto.
+  Case "tif". right. inversion Ht. subst. apply IHt1 in H3.
 Qed.
 (** [] *)
 

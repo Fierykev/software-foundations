@@ -18,7 +18,7 @@ Import STLC.
     straightforward extension of the progress proof we saw in the
     [Types] chapter. *)
 
-Theorem progress : forall t T, 
+Theorem progress : forall t T,
      empty |- t \in T ->
      value t \/ exists t', t ==> t'.
 
@@ -67,22 +67,22 @@ Proof with eauto.
   remember (@empty ty) as Gamma.
   has_type_cases (induction Ht) Case; subst Gamma...
   Case "T_Var".
-    (* contradictory: variables cannot be typed in an 
+    (* contradictory: variables cannot be typed in an
        empty context *)
-    inversion H. 
+    inversion H.
 
-  Case "T_App". 
-    (* [t] = [t1 t2].  Proceed by cases on whether [t1] is a 
+  Case "T_App".
+    (* [t] = [t1 t2].  Proceed by cases on whether [t1] is a
        value or steps... *)
     right. destruct IHHt1...
     SCase "t1 is a value".
       destruct IHHt2...
       SSCase "t2 is also a value".
         (* Since [t1] is a value and has an arrow type, it
-           must be an abs. Sometimes this is proved separately 
-           and called a "canonical forms" lemma. *) 
+           must be an abs. Sometimes this is proved separately
+           and called a "canonical forms" lemma. *)
         inversion H; subst. exists ([x0:=t2]t)...
-        solve by inversion. solve by inversion. 
+        solve by inversion. solve by inversion.
       SSCase "t2 steps".
         inversion H0 as [t2' Hstp]. exists (tapp t1 t2')...
 
@@ -91,7 +91,7 @@ Proof with eauto.
 
   Case "T_If".
     right. destruct IHHt1...
-    
+
     SCase "t1 is a value".
       (* Since [t1] is a value of boolean type, it must
          be true or false *)
@@ -107,13 +107,44 @@ Qed.
 (** Show that progress can also be proved by induction on terms
     instead of induction on typing derivations. *)
 
+(* By induction on the form of the term [t].
+
+   - The cases [ttrue], [tfalse] and [tabs] are trivial because they are values
+     and so the LHS [value t] holds.
+
+   - The case [tvar] is not well-typed in the empty context, so the
+     requirements are not fulfilled.
+
+   - In the case [t = tapp t1 t2] we know by the IH that [t1] and [t2]
+     are both either values or can take a step. If [t1] can take a step
+     then so can t by ST_App1. If [t1] is a value but [t2] is not then
+     [t] can step by ST_App2. If both [t1] and [t2] are values then
+     [t1] must be a lambda abstraction of the form [\x:T2.t1'] and so
+     [t] can step to [x:=t2]t1.
+
+   - The if case can step by ST_If, ST_IfTrue or ST_IfFalse.
+*)
+
 Theorem progress' : forall t T,
      empty |- t \in T ->
      value t \/ exists t', t ==> t'.
 Proof.
   intros t.
   t_cases (induction t) Case; intros T Ht; auto.
-  (* FILL IN HERE *) Admitted.
+  Case "tvar". inversion Ht. subst. inversion H1.
+  Case "tapp". inversion Ht. subst. apply IHt1 in H2. apply IHt2 in H4.
+    inversion H2. right.
+    SCase "t1 is a value". inversion H4.
+      SSCase "t2 is a value".
+        inversion H; subst. exists ([x0:=t2]t). apply ST_AppAbs. assumption.
+
+        solve by inversion.
+        inversion Ht. subst.
+        admit.
+      SSCase "t2 can step". admit.
+    SCase "t1 can step". admit.
+  Case "tif". admit.
+Qed.
 (** [] *)
 
 (* ###################################################################### *)
@@ -160,9 +191,9 @@ Proof.
 (** ** Free Occurrences *)
 
 (** A variable [x] _appears free in_ a term _t_ if [t] contains some
-    occurrence of [x] that is not under an abstraction labeled [x].  For example: 
-      - [y] appears free, but [x] does not, in [\x:T->U. x y] 
-      - both [x] and [y] appear free in [(\x:T->U. x y) x] 
+    occurrence of [x] that is not under an abstraction labeled [x].  For example:
+      - [y] appears free, but [x] does not, in [\x:T->U. x y]
+      - both [x] and [y] appear free in [(\x:T->U. x y) x]
       - no variables appear free in [\x:T->U. \y:T. x y]  *)
 
 Inductive appears_free_in : id -> tm -> Prop :=
@@ -189,9 +220,9 @@ Inductive appears_free_in : id -> tm -> Prop :=
 Tactic Notation "afi_cases" tactic(first) ident(c) :=
   first;
   [ Case_aux c "afi_var"
-  | Case_aux c "afi_app1" | Case_aux c "afi_app2" 
-  | Case_aux c "afi_abs" 
-  | Case_aux c "afi_if1" | Case_aux c "afi_if2" 
+  | Case_aux c "afi_app1" | Case_aux c "afi_app2"
+  | Case_aux c "afi_abs"
+  | Case_aux c "afi_if1" | Case_aux c "afi_if2"
   | Case_aux c "afi_if3" ].
 
 Hint Constructors appears_free_in.
@@ -244,9 +275,9 @@ Lemma free_in_context : forall x t T Gamma,
         that [x] and [y] are different variables. *)
 
 Proof.
-  intros x t T Gamma H H0. generalize dependent Gamma. 
-  generalize dependent T. 
-  afi_cases (induction H) Case; 
+  intros x t T Gamma H H0. generalize dependent Gamma.
+  generalize dependent T.
+  afi_cases (induction H) Case;
          intros; try solve [inversion H0; eauto].
   Case "afi_abs".
     inversion H1; subst.
@@ -258,7 +289,7 @@ Qed.
     the empty context is closed -- that is, it has no free variables. *)
 
 (** **** Exercise: 2 stars, optional (typable_empty__closed) *)
-Corollary typable_empty__closed : forall t T, 
+Corollary typable_empty__closed : forall t T,
     empty |- t \in T  ->
     closed t.
 Proof.
@@ -295,7 +326,7 @@ Lemma context_invariance : forall Gamma Gamma' t T,
         By [T_Abs], it suffices to show that [Gamma', y:T11 |- t12 \in
         T12].  By the IH (setting [Gamma'' = Gamma', y:T11]), it
         suffices to show that [Gamma, y:T11] and [Gamma', y:T11] agree
-        on all the variables that appear free in [t12].  
+        on all the variables that appear free in [t12].
 
         Any variable occurring free in [t12] must either be [y], or
         some other variable.  [Gamma, y:T11] and [Gamma', y:T11]
@@ -321,7 +352,7 @@ Lemma context_invariance : forall Gamma Gamma' t T,
 *)
 
 Proof with eauto.
-  intros. 
+  intros.
   generalize dependent Gamma'.
   has_type_cases (induction H) Case; intros; auto.
   Case "T_Var".
@@ -329,11 +360,11 @@ Proof with eauto.
   Case "T_Abs".
     apply T_Abs.
     apply IHhas_type. intros x1 Hafi.
-    (* the only tricky step... the [Gamma'] we use to 
+    (* the only tricky step... the [Gamma'] we use to
        instantiate is [extend Gamma x T11] *)
-    unfold extend. destruct (eq_id_dec x0 x1)... 
+    unfold extend. destruct (eq_id_dec x0 x1)...
   Case "T_App".
-    apply T_App with T11...  
+    apply T_App with T11...
 Qed.
 
 (** Now we come to the conceptual heart of the proof that reduction
@@ -370,7 +401,7 @@ Lemma substitution_preserves_typing : forall Gamma x U t v T,
     _Proof_: We prove, by induction on [t], that, for all [T] and
     [Gamma], if [Gamma,x:U |- t \in T] and [|- v \in U], then [Gamma |-
     [x:=v]t \in T].
- 
+
       - If [t] is a variable, there are two cases to consider, depending
         on whether [t] is [x] or some other variable.
 
@@ -425,21 +456,21 @@ Lemma substitution_preserves_typing : forall Gamma x U t v T,
 
 Proof with eauto.
   intros Gamma x U t v T Ht Ht'.
-  generalize dependent Gamma. generalize dependent T. 
+  generalize dependent Gamma. generalize dependent T.
   t_cases (induction t) Case; intros T Gamma H;
     (* in each case, we'll want to get at the derivation of H *)
     inversion H; subst; simpl...
   Case "tvar".
     rename i into y. destruct (eq_id_dec x y).
     SCase "x=y".
-      subst. 
+      subst.
       rewrite extend_eq in H2.
       inversion H2; subst. clear H2.
                   eapply context_invariance... intros x Hcontra.
       destruct (free_in_context _ _ T empty Hcontra) as [T' HT']...
       inversion HT'.
     SCase "x<>y".
-      apply T_Var. rewrite extend_neq in H2... 
+      apply T_Var. rewrite extend_neq in H2...
   Case "tabs".
     rename i into y. apply T_Abs.
     destruct (eq_id_dec x y).
@@ -452,7 +483,7 @@ Proof with eauto.
       apply IHt. eapply context_invariance...
       intros z Hafi. unfold extend.
       destruct (eq_id_dec y z)...
-      subst. rewrite neq_id... 
+      subst. rewrite neq_id...
 Qed.
 
 (** The substitution lemma can be viewed as a kind of "commutation"
@@ -510,18 +541,18 @@ Theorem preservation : forall t t' T,
 *)
 
 Proof with eauto.
-  remember (@empty ty) as Gamma. 
-  intros t t' T HT. generalize dependent t'.   
+  remember (@empty ty) as Gamma.
+  intros t t' T HT. generalize dependent t'.
   has_type_cases (induction HT) Case;
-       intros t' HE; subst Gamma; subst; 
+       intros t' HE; subst Gamma; subst;
        try solve [inversion HE; subst; auto].
   Case "T_App".
     inversion HE; subst...
-    (* Most of the cases are immediate by induction, 
+    (* Most of the cases are immediate by induction,
        and [eauto] takes care of them *)
     SCase "ST_AppAbs".
       apply substitution_preserves_typing with T11...
-      inversion HT1...  
+      inversion HT1...
 Qed.
 
 (** **** Exercise: 2 stars (subject_expansion_stlc) *)
@@ -549,7 +580,7 @@ Definition stuck (t:tm) : Prop :=
   (normal_form step) t /\ ~ value t.
 
 Corollary soundness : forall t t' T,
-  empty |- t \in T -> 
+  empty |- t \in T ->
   t ==>* t' ->
   ~(stuck t').
 Proof.
@@ -603,7 +634,7 @@ and the following typing rule:
 (** **** Exercise: 2 stars (stlc_variation2) *)
 (** Suppose instead that we add a new term [foo] with the following reduction rules:
                        -----------------                (ST_Foo1)
-                       (\x:A. x) ==> foo 
+                       (\x:A. x) ==> foo
 
                          ------------                   (ST_Foo2)
                          foo ==> true
@@ -715,7 +746,7 @@ End STLCProp.
 
 (* ###################################################################### *)
 (* ###################################################################### *)
-(** ** Exercise: STLC with Arithmetic *) 
+(** ** Exercise: STLC with Arithmetic *)
 
 (** To see how the STLC might function as the core of a real
     programming language, let's extend it with a concrete base
@@ -746,8 +777,8 @@ Inductive tm : Type :=
 
 Tactic Notation "t_cases" tactic(first) ident(c) :=
   first;
-  [ Case_aux c "tvar" | Case_aux c "tapp" 
-  | Case_aux c "tabs" | Case_aux c "tnat" 
+  [ Case_aux c "tvar" | Case_aux c "tapp"
+  | Case_aux c "tabs" | Case_aux c "tnat"
   | Case_aux c "tsucc" | Case_aux c "tpred"
   | Case_aux c "tmult" | Case_aux c "tif0" ].
 
@@ -772,4 +803,3 @@ Tactic Notation "t_cases" tactic(first) ident(c) :=
 End STLCArith.
 
 (* $Date: 2013-07-17 16:19:11 -0400 (Wed, 17 Jul 2013) $ *)
-

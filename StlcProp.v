@@ -142,7 +142,13 @@ Proof with eauto.
         inversion H0 as [t2' Ht2]. exists (tapp t1 t2'). apply ST_App2. auto. auto.
     SCase "t1 can step".
       inversion H as [t1' Ht1]. exists (tapp t1' t2). auto.
-  Case "tif". right. inversion Ht. subst. apply IHt1 in H3.
+  Case "tif". right. inversion Ht. subst. apply IHt1 in H3. inversion H3.
+    SCase "t1 is a value".
+      inversion H; subst. try (solve by inversion 2).
+      SSCase "t1 = ttrue". exists t2. apply ST_IfTrue.
+      SSCase "t1 = tfalse". exists t3. apply ST_IfFalse.
+    SCase "t1 steps".
+      inversion H as [t1' Ht1]. exists (tif t1' t2 t3). apply ST_If. apply Ht1.
 Qed.
 (** [] *)
 

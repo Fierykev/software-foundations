@@ -617,8 +617,17 @@ Qed.
     unique: a given term (in a given context) has at most one
     type. *)
 (** Formalize this statement and prove it. *)
-
-(* FILL IN HERE *)
+Theorem type_uniqueness : forall t T T' Gamma,
+  Gamma |- t \in T -> Gamma |- t \in T' -> T = T'.
+Proof.
+  intros t T T' Gamma HT. generalize dependent T'.
+  has_type_cases (induction HT) Case; intros T' HT'; inversion HT'; subst; clear HT';
+  try reflexivity.
+  Case "T_Var". rewrite H in H2. inversion H2. reflexivity.
+  Case "T_Abs". apply IHHT in H4. subst. reflexivity.
+  Case "T_App". apply IHHT1 in H2. inversion H2. reflexivity.
+  Case "T_If". apply IHHT2 in H5. assumption.
+Qed.
 (** [] *)
 
 (* ###################################################################### *)

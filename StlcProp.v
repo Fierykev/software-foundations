@@ -603,7 +603,11 @@ Proof.
   intros t t' T Hhas_type Hmulti. unfold stuck.
   intros [Hnf Hnot_val]. unfold normal_form in Hnf.
   induction Hmulti.
-  (* FILL IN HERE *) Admitted.
+  Case "multi_refl".
+    apply progress in Hhas_type. inversion Hhas_type. contradiction. contradiction.
+  Case "multi_step".
+    apply IHHmulti. eapply preservation. apply Hhas_type. assumption. assumption. assumption.
+Qed.
 
 (* ###################################################################### *)
 (** * Uniqueness of Types *)

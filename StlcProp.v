@@ -571,8 +571,15 @@ Qed.
     is it always the case that, if [t ==> t'] and [has_type t' T],
     then [empty |- t \in T]?  If so, prove it.  If not, give a
     counter-example not involving conditionals.
-
-(* FILL IN HERE *)
+*)
+Lemma not_subject_expansion : exists t t' T,
+  \empty |- t' \in T /\ t ==> t' /\ ~(\empty |- t \in T).
+Proof.
+  exists (tapp (tabs x (TArrow TBool TBool) ttrue) ttrue). exists ttrue. exists TBool.
+  split. apply T_True. split. apply ST_AppAbs. constructor.
+  unfold not. intros. inversion H. subst. inversion H3. subst. inversion H5.
+Qed.
+(*
 []
 *)
 

@@ -636,6 +636,16 @@ Qed.
 (** **** Exercise: 1 star (progress_preservation_statement) *)
 (** Without peeking, write down the progress and preservation
     theorems for the simply typed lambda-calculus. *)
+Theorem progress'': forall t T,
+  \empty |- t \in T ->
+  value t \/ exists t', t ==> t'.
+Admitted.
+
+Theorem preservation' : forall t t' T,
+  empty |- t \in T ->
+  t ==> t' ->
+  empty |- t' \in T.
+Admitted.
 (** [] *)
 
 

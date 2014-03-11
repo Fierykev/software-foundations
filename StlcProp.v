@@ -662,11 +662,15 @@ and the following typing rule:
     false, give a counterexample.
 
       - Determinism of [step]
+        No longer holds, since anything can also evaluate to zap.
+        Example: tif ttrue tfalse tfalse ==> tfalse \/ tif ttrue tfalse tfalse ==> zap
 
       - Progress
+        No longer holds, because zap is not a value and it cannot step.
 
       - Preservation
-
+        Still holds, because [zap] is in all types, so when we additionally must
+        check that t ==> zap, then empty |- zap \in T is true for all [T].
 []
 *)
 
@@ -683,10 +687,13 @@ and the following typing rule:
     false, give a counterexample.
 
       - Determinism of [step]
+        Still holds
 
       - Progress
+        Still holds
 
       - Preservation
+        Doesn't hold, since foo doesn't have a type.
 
 []
 *)
@@ -699,10 +706,16 @@ and the following typing rule:
     false, give a counterexample.
 
       - Determinism of [step]
+        Still holds.
 
       - Progress
+        Doesn't hold anymore, for example
+        (tapp (tif ttrue idB idB) ttrue) cannot be reduced but is also
+        not a value.
 
       - Preservation
+        Still holds. _If_ we can take a step than things will still be
+        well typed.
 
 []
 *)
@@ -717,10 +730,15 @@ and the following typing rule:
     false, give a counterexample.
 
       - Determinism of [step]
+        Nope (the if statement can evaluate to both true and t1)
 
       - Progress
+        Still holds.
 
       - Preservation
+        Doesn't hold anymore
+        [t=if ttrue then idB else idB], [\empty |- t \in TArrow TBool TBool],
+        [t ==> ttrue], [\empty |- ttrue \in TBool].
 
 *)
 
@@ -736,11 +754,16 @@ and the following typing rule:
     false, give a counterexample.
 
       - Determinism of [step]
+        Yep (typing doesn't affect evaluation)
 
       - Progress
+        No, because we can get idB in TBool now and we don't have
+        a rule to evaluate (tif idB ttrue ttrue).
 
       - Preservation
-
+        No, we're dropping one ->Bool:
+        empty |- (\x:TBool. \y:TBool. y) ttrue \in TBool (T_FunnyApp)
+        but: (\x:TBool. \y:TBool. y) ttrue ==> idB \in TArrow TBool TBool.
 *)
 
 (** **** Exercise: 2 stars, optional (stlc_variation6) *)
@@ -755,10 +778,13 @@ and the following typing rule:
     false, give a counterexample.
 
       - Determinism of [step]
+        Yep.
 
       - Progress
+        No, we can have [tapp ttrue ttrue] and we can't evaluate it.
 
       - Preservation
+        Remains true, if it can take a step then the type is preserved.
 
 *)
 
@@ -773,11 +799,13 @@ and the following typing rule:
     false, give a counterexample.
 
       - Determinism of [step]
+        Yep (typing rule)
 
       - Progress
+        Nope, can't evaluate this to true or false.
 
       - Preservation
-
+        Nope, same example as in stlc_variation5.
 []
 *)
 

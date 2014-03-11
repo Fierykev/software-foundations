@@ -298,19 +298,10 @@ Corollary typable_empty__closed : forall t T,
     empty |- t \in T  ->
     closed t.
 Proof.
-  unfold closed, not. intro t. t_cases (induction t) Case; intros T Hty x Hc;
-  try (solve by inversion).
-  Case "tvar". inversion Hty. subst. inversion H1.
-  Case "tapp". inversion Hc; subst; inversion Hty; subst. eapply IHt1. apply H3. apply H1.
-    eapply IHt2. apply H5. apply H1.
-  Case "tabs". inversion Hty; inversion Hc; subst.
-    assert (exists T', (extend \empty i t) x = Some T').
-    apply (free_in_context x t0 T12 (extend \empty i t)). assumption. assumption.
-    inversion H. rewrite extend_neq in H0. inversion H0. assumption.
-  Case "tif". inversion Hc; inversion Hty; subst.
-    eapply IHt1. apply H8. apply H1.
-    eapply IHt2. apply H10. apply H1.
-    eapply IHt3. apply H11. apply H1.
+  unfold closed, not. intros t T Hty x Hafi.
+  apply free_in_context with (x:=x) (t:=t) (T:=T) (Gamma:=\empty) in Hafi.
+  solve by inversion 2.
+  assumption.
 Qed.
 (** [] *)
 

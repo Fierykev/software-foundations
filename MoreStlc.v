@@ -1,6 +1,6 @@
 (** * MoreStlc: More on the Simply Typed Lambda-Calculus *)
 
-Require Export Stlc. 
+Require Export Stlc.
 
 (* ###################################################################### *)
 (** * Simple Extensions to STLC *)
@@ -80,7 +80,7 @@ Require Export Stlc.
     example, here's how we'd write a function that takes a pair of
     numbers and returns the pair of their sum and difference:
 <<
-       \x:Nat*Nat. 
+       \x:Nat*Nat.
           let sum = x.fst + x.snd in
           let diff = x.fst - x.snd in
           (sum,diff)
@@ -96,7 +96,7 @@ Require Export Stlc.
 (** Syntax:
 <<
        t ::=                Terms
-           | ...               
+           | ...
            | (t,t)             pair
            | t.fst             first projection
            | t.snd             second projection
@@ -112,7 +112,7 @@ Require Export Stlc.
 *)
 
 (** For evaluation, we need several new rules specifying how pairs and
-    projection behave.  
+    projection behave.
                               t1 ==> t1'
                          --------------------                        (ST_Pair1)
                          (t1,t2) ==> (t1',t2)
@@ -187,11 +187,11 @@ Require Export Stlc.
 (** Syntax:
 <<
        t ::=                Terms
-           | ...               
+           | ...
            | unit              unit value
 
        v ::=                Values
-           | ...     
+           | ...
            | unit              unit
 
        T ::=                Types
@@ -202,7 +202,7 @@ Require Export Stlc.
                          --------------------                          (T_Unit)
                          Gamma |- unit : Unit
 *)
-    
+
 (** It may seem a little strange to bother defining a type that
     has just one element -- after all, wouldn't every computation
     living in such a type be trivial?
@@ -222,7 +222,7 @@ Require Export Stlc.
    forms.  For example, we might identify employees in an accounting
    application using using _either_ their name _or_ their id number.
    A search function might return _either_ a matching value _or_ an
-   error code.  
+   error code.
 
    These are specific examples of a binary _sum type_,
    which describes a set of values drawn from exactly two given types, e.g.
@@ -256,7 +256,7 @@ Require Export Stlc.
     [T2] tagged with [inr]. *)
 
 (** One important usage of sums is signaling errors:
-<< 
+<<
     div : Nat -> Nat -> (Nat + Unit) =
     div =
       \x:Nat. \y:Nat.
@@ -274,26 +274,26 @@ Require Export Stlc.
     into a [Nat]: *)
 
 (**
-<< 
-    getNat = 
+<<
+    getNat =
       \x:Nat+Bool.
         case x of
           inl n => n
         | inr b => if b then 1 else 0
 >>
 *)
-          
+
 (** More formally... *)
 
 (** Syntax:
 <<
        t ::=                Terms
-           | ...               
+           | ...
            | inl T t           tagging (left)
            | inr T t           tagging (right)
            | case t of         case
                inl x => t
-             | inr x => t 
+             | inr x => t
 
        v ::=                Values
            | ...
@@ -319,7 +319,7 @@ Require Export Stlc.
                               t0 ==> t0'
                    -------------------------------------------       (ST_Case)
                    case t0 of inl x1 => t1 | inr x2 => t2 ==>
-                   case t0' of inl x1 => t1 | inr x2 => t2 
+                   case t0' of inl x1 => t1 | inr x2 => t2
 
             ----------------------------------------------         (ST_CaseInl)
             case (inl T v0) of inl x1 => t1 | inr x2 => t2
@@ -388,11 +388,11 @@ Require Export Stlc.
 
 (** For example, here is a function that calculates the sum of
     the first two elements of a list of numbers:
-<< 
-    \x:List Nat.  
-    lcase x of nil -> 0 
+<<
+    \x:List Nat.
+    lcase x of nil -> 0
        | a::x' -> lcase x' of nil -> a
-                     | b::x'' -> a+b 
+                     | b::x'' -> a+b
 >>
 *)
 
@@ -462,9 +462,9 @@ Require Export Stlc.
     we might like to be able to define the factorial function like
     this:
 <<
-   fact = \x:Nat. 
-             if x=0 then 1 else x * (fact (pred x)))    
->> 
+   fact = \x:Nat.
+             if x=0 then 1 else x * (fact (pred x)))
+>>
    But this would require quite a bit of work to formalize: we'd have
    to introduce a notion of "function definitions" and carry around an
    "environment" of such definitions in the definition of the [step]
@@ -476,12 +476,12 @@ Require Export Stlc.
    operator_ that performs the "unfolding" of the recursive definition
    in the right-hand side lazily during reduction.
 <<
-   fact = 
+   fact =
        fix
          (\f:Nat->Nat.
-            \x:Nat. 
-               if x=0 then 1 else x * (f (pred x)))    
->> 
+            \x:Nat.
+               if x=0 then 1 else x * (f (pred x)))
+>>
 *)
 
 
@@ -539,7 +539,7 @@ if 3=0 then 1 else 3 * (fix F (pred 3))
 <<
 3 * (fix F (pred 3))
 >>
-[==>] [ST_FixAbs + ST_Mult2] 
+[==>] [ST_FixAbs + ST_Mult2]
 <<
 3 * ((\x. if x=0 then 1 else x * (fix F (pred x))) (pred 3))
 >>
@@ -605,11 +605,16 @@ if 3=0 then 1 else 3 * (fix F (pred 3))
 (** **** Exercise: 1 star (halve_fix) *)
 (** Translate this informal recursive definition into one using [fix]:
 <<
-   halve = 
-     \x:Nat. 
-        if x=0 then 0 
+   halve =
+     \x:Nat.
+        if x=0 then 0
         else if (pred x)=0 then 0
         else 1 + (halve (pred (pred x))))
+>>
+<<
+  halve = fix \f:Nat->Nat. \x:Nat if x=0 then 0
+                              else if (pred x)=0 then 0
+                              else 1 + (f (pred (pred x)))
 >>
 (* FILL IN HERE *)
 []
@@ -620,7 +625,24 @@ if 3=0 then 1 else 3 * (fix F (pred 3))
     through to reduce to a normal form (assuming the usual reduction
     rules for arithmetic operations).
 
-    (* FILL IN HERE *)
+<<
+    fact 1 = fix (\f:Nat->Nat. \x:Nat. if x=0 then 1 else x*(f (pred x))) 1
+    ==> ST_FixAbs
+    (\x:Nat. if x=0 then 1 else x*(fix fact (pred x))) 1
+    ==> ST_App
+    if 1=0 then 1 else 1*(fix fact (pred 1)))
+    ==> ST_If0_Nonzero
+    1*(fix fact (pred 1))
+    ==> ST_Fix1
+    1*(fix fact 0)
+    ==> ST_FixAbs
+    1*((\x:Nat. if x=0 then 1 else x*(fix fact (pred x))) 0)
+    ==> ST_App
+    1*(if 0=0 then 1 else 0*(fix fact (pred 0)))
+    ==> ST_If0_Zero
+    1*1
+    ==> ST_Mult
+    1
 []
 *)
 
@@ -630,17 +652,17 @@ if 3=0 then 1 else 3 * (fix F (pred 3))
     observe that, for every type [T], we can define the term
     fix (\x:T.x)
     By [T_Fix]  and [T_Abs], this term has type [T].  By [ST_FixAbs]
-    it reduces to itself, over and over again.  Thus it is an 
-    _undefined element_ of [T]. 
+    it reduces to itself, over and over again.  Thus it is an
+    _undefined element_ of [T].
 
     More usefully, here's an example using [fix] to define a
     two-argument recursive function:
 <<
-    equal = 
-      fix 
+    equal =
+      fix
         (\eq:Nat->Nat->Bool.
            \m:Nat. \n:Nat.
-             if m=0 then iszero n 
+             if m=0 then iszero n
              else if n=0 then false
              else eq (pred m) (pred n))
 >>
@@ -649,8 +671,8 @@ if 3=0 then 1 else 3 * (fix F (pred 3))
     _pair_ of recursive functions (illustrating the fact that the type
     [T1] in the rule [T_Fix] need not be a function type):
 <<
-    evenodd = 
-      fix 
+    evenodd =
+      fix
         (\eo: (Nat->Bool * Nat->Bool).
            let e = \n:Nat. if n=0 then true  else eo.snd (pred n) in
            let o = \n:Nat. if n=0 then false else eo.fst (pred n) in
@@ -681,7 +703,7 @@ if 3=0 then 1 else 3 * (fix F (pred 3))
 <<
        t ::=                          Terms
            | ...
-           | {i1=t1, ..., in=tn}         record 
+           | {i1=t1, ..., in=tn}         record
            | t.i                         projection
 
        v ::=                          Values
@@ -691,7 +713,7 @@ if 3=0 then 1 else 3 * (fix F (pred 3))
        T ::=                          Types
            | ...
            | {i1:T1, ..., in:Tn}         record type
->> 
+>>
    Intuitively, the generalization is pretty obvious.  But it's worth
    noticing that what we've actually written is rather informal: in
    particular, we've written "[...]" in several places to mean "any
@@ -737,7 +759,7 @@ if 3=0 then 1 else 3 * (fix F (pred 3))
 (* ###################################################################### *)
 (** *** Encoding Records (Optional) *)
 
-(** There are several ways to make the above definitions precise.  
+(** There are several ways to make the above definitions precise.
 
       - We can directly formalize the syntactic forms and inference
         rules, staying as close as possible to the form we've given
@@ -768,7 +790,7 @@ if 3=0 then 1 else 3 * (fix F (pred 3))
     notation [(t1,t2)], we'll use curly braces without labels to write
     down tuples, so [{}] is the empty tuple, [{5}] is a singleton
     tuple, [{5,6}] is a 2-tuple (morally the same as a pair),
-    [{5,6,7}] is a triple, etc.  
+    [{5,6,7}] is a triple, etc.
 <<
     {}                 ---->  unit
     {t1, t2, ..., tn}  ---->  (t1, trest)
@@ -781,7 +803,7 @@ if 3=0 then 1 else 3 * (fix F (pred 3))
                               where {T2, ..., Tn} ----> TRest
 >>
     The operation of projecting a field from a tuple can be encoded
-    using a sequence of second projections followed by a first projection: 
+    using a sequence of second projections followed by a first projection:
 <<
     t.0        ---->  t.fst
     t.(n+1)    ---->  (t.snd).n
@@ -801,7 +823,7 @@ if 3=0 then 1 else 3 * (fix F (pred 3))
       ...     ...
       bar     10562
       ...     ...
->>       
+>>
 
     We use these positions to encode record values as tuples (i.e., as
     nested pairs) by sorting the fields according to their positions.
@@ -817,7 +839,7 @@ if 3=0 then 1 else 3 * (fix F (pred 3))
     Note that each field appears in the position associated with its
     label, that the size of the tuple is determined by the label with
     the highest position, and that we fill in unused positions with
-    [unit].  
+    [unit].
 
     We do exactly the same thing with record types:
 <<
@@ -830,7 +852,7 @@ if 3=0 then 1 else 3 * (fix F (pred 3))
     the appropriate position:
 <<
       t.l  ---->  t.(position of l)
->>    
+>>
 
     It is not hard to check that all the typing rules for the original
     "direct" presentation of records are validated by this
@@ -851,7 +873,7 @@ if 3=0 then 1 else 3 * (fix F (pred 3))
     generalized to n-ary labeled types called _variants_.  Instead of
     [T1+T2], we can write something like [<l1:T1,l2:T2,...ln:Tn>]
     where [l1],[l2],... are field labels which are used both to build
-    instances and as case arm labels.  
+    instances and as case arm labels.
 
     These n-ary variants give us almost enough mechanism to build
     arbitrary inductive data types like lists and trees from
@@ -878,7 +900,7 @@ if 3=0 then 1 else 3 * (fix F (pred 3))
     you, referring to the text in the [Stlc] chapter for high-level
     intuitions and the embedded comments for detailed mechanics.
 
-    A good order for attempting the extensions is: 
+    A good order for attempting the extensions is:
       - numbers first (since they are both familiar and simple)
       - products and units
       - let (which involves binding)
@@ -894,16 +916,19 @@ Module STLCExtended.
 Inductive ty : Type :=
   | TArrow : ty -> ty -> ty
   | TNat   : ty
+(*
   | TUnit  : ty
   | TProd  : ty -> ty -> ty
   | TSum   : ty -> ty -> ty
-  | TList  : ty -> ty.
+  | TList  : ty -> ty
+*)
+.
 
 Tactic Notation "T_cases" tactic(first) ident(c) :=
   first;
   [ Case_aux c "TArrow" | Case_aux c "TNat"
-  | Case_aux c "TProd" | Case_aux c "TUnit"
-  | Case_aux c "TSum" | Case_aux c "TList"  ].
+  (* | Case_aux c "TProd" | Case_aux c "TUnit"
+  | Case_aux c "TSum" | Case_aux c "TList" *)  ].
 
 Inductive tm : Type :=
   (* pure STLC *)
@@ -917,26 +942,28 @@ Inductive tm : Type :=
   | tmult : tm -> tm -> tm
   | tif0  : tm -> tm -> tm -> tm
   (* pairs *)
-  | tpair : tm -> tm -> tm
+(*  | tpair : tm -> tm -> tm
   | tfst : tm -> tm
   | tsnd : tm -> tm
   (* units *)
   | tunit : tm
   (* let *)
-  | tlet : id -> tm -> tm -> tm 
+  | tlet : id -> tm -> tm -> tm
           (* i.e., [let x = t1 in t2] *)
   (* sums *)
   | tinl : ty -> tm -> tm
   | tinr : ty -> tm -> tm
-  | tcase : tm -> id -> tm -> id -> tm -> tm  
+  | tcase : tm -> id -> tm -> id -> tm -> tm
           (* i.e., [case t0 of inl x1 => t1 | inr x2 => t2] *)
   (* lists *)
   | tnil : ty -> tm
   | tcons : tm -> tm -> tm
-  | tlcase : tm -> tm -> id -> id -> tm -> tm 
+  | tlcase : tm -> tm -> id -> id -> tm -> tm
           (* i.e., [lcase t1 of | nil -> t2 | x::y -> t3] *)
   (* fix *)
-  | tfix  : tm -> tm.
+  | tfix  : tm -> tm
+*)
+.
 
 (** Note that, for brevity, we've omitted booleans and instead
     provided a single [if0] form combining a zero test and a
@@ -955,25 +982,31 @@ Tactic Notation "t_cases" tactic(first) ident(c) :=
   [ Case_aux c "tvar" | Case_aux c "tapp" | Case_aux c "tabs"
   | Case_aux c "tnat" | Case_aux c "tsucc" | Case_aux c "tpred"
   | Case_aux c "tmult" | Case_aux c "tif0"
+  (*
   | Case_aux c "tpair" | Case_aux c "tfst" | Case_aux c "tsnd"
-  | Case_aux c "tunit" | Case_aux c "tlet" 
+  | Case_aux c "tunit" | Case_aux c "tlet"
   | Case_aux c "tinl" | Case_aux c "tinr" | Case_aux c "tcase"
   | Case_aux c "tnil" | Case_aux c "tcons" | Case_aux c "tlcase"
-  | Case_aux c "tfix" ].
+  | Case_aux c "tfix"
+  *)
+  ].
 
 (* ###################################################################### *)
 (** *** Substitution *)
 
 Fixpoint subst (x:id) (s:tm) (t:tm) : tm :=
   match t with
-  | tvar y => 
+  | tvar y =>
       if eq_id_dec x y then s else t
-  | tabs y T t1 => 
+  | tabs y T t1 =>
       tabs y T (if eq_id_dec x y then t1 else (subst x s t1))
-  | tapp t1 t2 => 
+  | tapp t1 t2 =>
       tapp (subst x s t1) (subst x s t2)
-  (* FILL IN HERE *)
-  | _ => t  (* ... and delete this line *) 
+  | tnat n => tnat n
+  | tsucc t => tsucc (subst x s t)
+  | tpred t => tpred (subst x s t)
+  | tmult t1 t2 => tmult (subst x s t1) (subst x s t2)
+  | tif0 t1 t2 t3 => tif0 (subst x s t1) (subst x s t2) (subst x s t3)
   end.
 
 Notation "'[' x ':=' s ']' t" := (subst x s t) (at level 20).
@@ -987,7 +1020,8 @@ Notation "'[' x ':=' s ']' t" := (subst x s t) (at level 20).
 Inductive value : tm -> Prop :=
   | v_abs : forall x T11 t12,
       value (tabs x T11 t12)
-  (* FILL IN HERE *)
+  | v_nat : forall n,
+      value (tnat n)
   .
 
 Hint Constructors value.
@@ -1005,14 +1039,51 @@ Inductive step : tm -> tm -> Prop :=
          value v1 ->
          t2 ==> t2' ->
          (tapp v1 t2) ==> (tapp v1 t2')
-  (* FILL IN HERE *)
+  | ST_Succ : forall t t',
+         t ==> t' ->
+         tsucc t ==> tsucc t'
+  | ST_SuccNat : forall n,
+         tsucc (tnat n) ==> tnat (S n)
+  | ST_Pred : forall t t',
+         t ==> t' ->
+         tpred t ==> tpred t'
+  | ST_PredSucc  : forall n,
+         tpred (tnat (S n)) ==> tnat n
+  | ST_PredZero :
+         tpred (tnat O) ==> tnat O
+  | ST_Mult1 : forall t1 t1' t2,
+         t1 ==> t1' ->
+         tmult t1 t2 ==> tmult t1' t2
+  | ST_Mult2 : forall v t2 t2',
+         value v ->
+         t2 ==> t2' ->
+         tmult v t2 ==> tmult v t2'
+  | ST_MultNats : forall n1 n2,
+         tmult (tnat n1) (tnat n2) ==> (tnat (n1*n2))
+  | ST_If0 : forall t1 t1' t2 t3,
+         t1 ==> t1' ->
+         tif0 t1 t2 t3 ==> tif0 t1' t2 t3
+  | ST_If0Zero : forall t2 t3,
+         tif0 (tnat O) t2 t3 ==> t2
+  | ST_If0Succ : forall n t2 t3,
+         tif0 (tnat (S n)) t2 t3 ==> t3
 
 where "t1 '==>' t2" := (step t1 t2).
 
 Tactic Notation "step_cases" tactic(first) ident(c) :=
   first;
   [ Case_aux c "ST_AppAbs" | Case_aux c "ST_App1" | Case_aux c "ST_App2"
-    (* FILL IN HERE *)
+  | Case_aux c "ST_Succ"
+  | Case_aux c "ST_SuccNat"
+  | Case_aux c "ST_Pred"
+  | Case_aux c "ST_PredSucc"
+  | Case_aux c "ST_PredZero"
+  | Case_aux c "ST_Mult1"
+  | Case_aux c "ST_Mult2"
+  | Case_aux c "ST_MultNats"
+  | Case_aux c "ST_If0"
+  | Case_aux c "ST_If0Zero"
+  | Case_aux c "ST_If0Succ"
   ].
 
 Notation multistep := (multi step).
@@ -1036,13 +1107,29 @@ Inductive has_type : context -> tm -> ty -> Prop :=
       Gamma x = Some T ->
       Gamma |- (tvar x) \in T
   | T_Abs : forall Gamma x T11 T12 t12,
-      (extend Gamma x T11) |- t12 \in T12 -> 
+      (extend Gamma x T11) |- t12 \in T12 ->
       Gamma |- (tabs x T11 t12) \in (TArrow T11 T12)
   | T_App : forall T1 T2 Gamma t1 t2,
-      Gamma |- t1 \in (TArrow T1 T2) -> 
-      Gamma |- t2 \in T1 -> 
+      Gamma |- t1 \in (TArrow T1 T2) ->
+      Gamma |- t2 \in T1 ->
       Gamma |- (tapp t1 t2) \in T2
-  (* FILL IN HERE *)
+  | T_Nat : forall n Gamma,
+      Gamma |- (tnat n) \in TNat
+  | T_Succ : forall t Gamma,
+      Gamma |- t \in TNat ->
+      Gamma |- (tsucc t) \in TNat
+  | T_Pred : forall t Gamma,
+      Gamma |- t \in TNat ->
+      Gamma |- (tpred t) \in TNat
+  | T_Mult : forall t1 t2 Gamma,
+      Gamma |- t1 \in TNat ->
+      Gamma |- t2 \in TNat ->
+      Gamma |- (tmult t1 t2) \in TNat
+  | T_If0 : forall t1 t2 t3 T Gamma,
+      Gamma |- t1 \in TNat ->
+      Gamma |- t2 \in T ->
+      Gamma |- t3 \in T ->
+      Gamma |- tif0 t1 t2 t3 \in T
 
 where "Gamma '|-' t '\in' T" := (has_type Gamma t T).
 
@@ -1050,8 +1137,12 @@ Hint Constructors has_type.
 
 Tactic Notation "has_type_cases" tactic(first) ident(c) :=
   first;
-  [ Case_aux c "T_Var" | Case_aux c "T_Abs" | Case_aux c "T_App" 
-    (* FILL IN HERE *)
+  [ Case_aux c "T_Var" | Case_aux c "T_Abs" | Case_aux c "T_App"
+  | Case_aux c "T_Nat"
+  | Case_aux c "T_Succ"
+  | Case_aux c "T_Pred"
+  | Case_aux c "T_Mult"
+  | Case_aux c "T_If0"
 ].
 
 (* ###################################################################### *)
@@ -1105,13 +1196,13 @@ Notation eo := (Id 18).
     solving equality goals; this is useful to automate uses of
     [T_Var] (which includes an equality as a precondition). *)
 
-Hint Extern 2 (has_type _ (tapp _ _) _) => 
+Hint Extern 2 (has_type _ (tapp _ _) _) =>
   eapply T_App; auto.
-(* You'll want to uncomment the following line once 
+(* You'll want to uncomment the following line once
    you've defined the [T_Lcase] constructor for the typing
    relation: *)
-(* 
-Hint Extern 2 (has_type _ (tlcase _ _ _ _ _) _) => 
+(*
+Hint Extern 2 (has_type _ (tlcase _ _ _ _ _) _) =>
   eapply T_Lcase; auto.
 *)
 Hint Extern 2 (_ = _) => compute; reflexivity.
@@ -1122,12 +1213,12 @@ Module Numtest.
 
 (* if0 (pred (succ (pred (2 * 0))) then 5 else 6 *)
 Definition test :=
-  tif0 
+  tif0
     (tpred
       (tsucc
-        (tpred 
-          (tmult 
-            (tnat 2) 
+        (tpred
+          (tmult
+            (tnat 2)
             (tnat 0)))))
     (tnat 5)
     (tnat 6).
@@ -1135,14 +1226,13 @@ Definition test :=
 (** Remove the comment braces once you've implemented enough of the
     definitions that you think this should work. *)
 
-(* 
 Example typechecks :
   (@empty ty) |- test \in TNat.
 Proof.
   unfold test.
   (* This typing derivation is quite deep, so we need to increase the
      max search depth of [auto] from the default 5 to 10. *)
-  auto 10. 
+  auto 10.
 Qed.
 
 Example numtest_reduces :
@@ -1150,12 +1240,11 @@ Example numtest_reduces :
 Proof.
   unfold test. normalize.
 Qed.
-*)
 
 End Numtest.
 
 (** *** Products *)
-
+(*
 Module Prodtest.
 
 (* ((5,6),7).fst.snd *)
@@ -1164,11 +1253,11 @@ Definition test :=
     (tfst
       (tpair
         (tpair
-          (tnat 5) 
+          (tnat 5)
           (tnat 6))
         (tnat 7))).
 
-(* 
+(*
 Example typechecks :
   (@empty ty) |- test \in TNat.
 Proof. unfold test. eauto 15. Qed.
@@ -1191,7 +1280,7 @@ Definition test :=
     (tpred (tnat 6))
     (tsucc (tvar x)).
 
-(* 
+(*
 Example typechecks :
   (@empty ty) |- test \in TNat.
 Proof. unfold test. eauto 15. Qed.
@@ -1216,7 +1305,7 @@ Definition test :=
     x (tvar x)
     y (tvar y).
 
-(* 
+(*
 Example typechecks :
   (@empty ty) |- test \in TNat.
 Proof. unfold test. eauto 15. Qed.
@@ -1248,7 +1337,7 @@ Definition test :=
       (tapp (tvar processSum) (tinl TNat (tnat 5)))
       (tapp (tvar processSum) (tinr TNat (tnat 5)))).
 
-(* 
+(*
 Example typechecks :
   (@empty ty) |- test \in (TProd TNat TNat).
 Proof. unfold test. eauto 15. Qed.
@@ -1276,7 +1365,7 @@ Definition test :=
        (tnat 0)
        x y (tmult (tvar x) (tvar x))).
 
-(* 
+(*
 Example typechecks :
   (@empty ty) |- test \in TNat.
 Proof. unfold test. eauto 20. Qed.
@@ -1294,31 +1383,31 @@ Module FixTest1.
 
 (* fact := fix
              (\f:nat->nat.
-                \a:nat. 
+                \a:nat.
                    if a=0 then 1 else a * (f (pred a))) *)
 Definition fact :=
   tfix
     (tabs f (TArrow TNat TNat)
       (tabs a TNat
-        (tif0 
-           (tvar a) 
-           (tnat 1) 
-           (tmult 
-              (tvar a) 
+        (tif0
+           (tvar a)
+           (tnat 1)
+           (tmult
+              (tvar a)
               (tapp (tvar f) (tpred (tvar a))))))).
 
 (** (Warning: you may be able to typecheck [fact] but still have some
     rules wrong!) *)
 
-(* 
+(*
 Example fact_typechecks :
   (@empty ty) |- fact \in (TArrow TNat TNat).
-Proof. unfold fact. auto 10. 
+Proof. unfold fact. auto 10.
 Qed.
 *)
 
-(* 
-Example fact_example: 
+(*
+Example fact_example:
   (tapp fact (tnat 4)) ==>* (tnat 24).
 Proof. unfold fact. normalize. Qed.
 *)
@@ -1331,26 +1420,26 @@ Module FixTest2.
      \g:nat->nat.
        fix
          (\f:[nat]->[nat].
-            \l:[nat]. 
+            \l:[nat].
                case l of
                | [] -> []
-               | x::l -> (g x)::(f l)) *) 
+               | x::l -> (g x)::(f l)) *)
 Definition map :=
   tabs g (TArrow TNat TNat)
     (tfix
       (tabs f (TArrow (TList TNat) (TList TNat))
         (tabs l (TList TNat)
           (tlcase (tvar l)
-            (tnil TNat) 
-            a l (tcons (tapp (tvar g) (tvar a)) 
+            (tnil TNat)
+            a l (tcons (tapp (tvar g) (tvar a))
                          (tapp (tvar f) (tvar l))))))).
 
-(* 
+(*
 (* Make sure you've uncommented the last [Hint Extern] above... *)
 Example map_typechecks :
-  empty |- map \in 
+  empty |- map \in
     (TArrow (TArrow TNat TNat)
-      (TArrow (TList TNat) 
+      (TArrow (TList TNat)
         (TList TNat))).
 Proof. unfold map. auto 10. Qed.
 
@@ -1365,11 +1454,11 @@ End FixTest2.
 
 Module FixTest3.
 
-(* equal = 
-      fix 
+(* equal =
+      fix
         (\eq:Nat->Nat->Bool.
            \m:Nat. \n:Nat.
-             if0 m then (if0 n then 1 else 0) 
+             if0 m then (if0 n then 1 else 0)
              else if0 n then 0
              else eq (pred m) (pred n))   *)
 
@@ -1377,30 +1466,30 @@ Definition equal :=
   tfix
     (tabs eq (TArrow TNat (TArrow TNat TNat))
       (tabs m TNat
-        (tabs n TNat 
-          (tif0 (tvar m) 
+        (tabs n TNat
+          (tif0 (tvar m)
             (tif0 (tvar n) (tnat 1) (tnat 0))
-            (tif0 (tvar n) 
-              (tnat 0) 
-              (tapp (tapp (tvar eq) 
+            (tif0 (tvar n)
+              (tnat 0)
+              (tapp (tapp (tvar eq)
                               (tpred (tvar m)))
                       (tpred (tvar n)))))))).
 
-(* 
+(*
 Example equal_typechecks :
   (@empty ty) |- equal \in (TArrow TNat (TArrow TNat TNat)).
-Proof. unfold equal. auto 10. 
+Proof. unfold equal. auto 10.
 Qed.
 *)
 
-(* 
-Example equal_example1: 
+(*
+Example equal_example1:
   (tapp (tapp equal (tnat 4)) (tnat 4)) ==>* (tnat 1).
 Proof. unfold equal. normalize. Qed.
 *)
 
-(* 
-Example equal_example2: 
+(*
+Example equal_example2:
   (tapp (tapp equal (tnat 4)) (tnat 5)) ==>* (tnat 0).
 Proof. unfold equal. normalize. Qed.
 *)
@@ -1409,8 +1498,8 @@ End FixTest3.
 
 Module FixTest4.
 
-(* let evenodd = 
-         fix 
+(* let evenodd =
+         fix
            (\eo: (Nat->Nat * Nat->Nat).
               let e = \n:Nat. if0 n then 1 else eo.snd (pred n) in
               let o = \n:Nat. if0 n then 0 else eo.fst (pred n) in
@@ -1421,39 +1510,39 @@ Module FixTest4.
 *)
 
 Definition eotest :=
-  tlet evenodd 
+  tlet evenodd
     (tfix
       (tabs eo (TProd (TArrow TNat TNat) (TArrow TNat TNat))
         (tpair
           (tabs n TNat
-            (tif0 (tvar n) 
+            (tif0 (tvar n)
               (tnat 1)
               (tapp (tsnd (tvar eo)) (tpred (tvar n)))))
           (tabs n TNat
-            (tif0 (tvar n) 
+            (tif0 (tvar n)
               (tnat 0)
               (tapp (tfst (tvar eo)) (tpred (tvar n))))))))
   (tlet even (tfst (tvar evenodd))
   (tlet odd (tsnd (tvar evenodd))
-  (tpair 
+  (tpair
     (tapp (tvar even) (tnat 3))
     (tapp (tvar even) (tnat 4))))).
 
-(* 
+(*
 Example eotest_typechecks :
   (@empty ty) |- eotest \in (TProd TNat TNat).
-Proof. unfold eotest. eauto 30. 
+Proof. unfold eotest. eauto 30.
 Qed.
 *)
 
-(* 
-Example eotest_example1: 
+(*
+Example eotest_example1:
   eotest ==>* (tpair (tnat 0) (tnat 1)).
 Proof. unfold eotest. normalize. Qed.
 *)
 
 End FixTest4.
-
+*)
 End Examples.
 
 (* ###################################################################### *)
@@ -1466,9 +1555,17 @@ End Examples.
 (* ###################################################################### *)
 (** *** Progress *)
 
-Theorem progress : forall t T, 
+(*
+Ltac value_nat_nat :=
+  match goal with
+    Hv: value ?t, HNat: has_type \empty ?t TNat |- _ =>
+      inversion Hv. subst. inversion HNat.
+  end.
+*)
+
+Theorem progress : forall t T,
      empty |- t \in T ->
-     value t \/ exists t', t ==> t'. 
+     value t \/ exists t', t ==> t'.
 Proof with eauto.
   (* Theorem: Suppose empty |- t : T.  Then either
        1. t is a value, or
@@ -1488,32 +1585,44 @@ Proof with eauto.
        which is a value. *)
     left...
   Case "T_App".
-    (* If the last rule applied was T_App, then [t = t1 t2], and we know 
+    (* If the last rule applied was T_App, then [t = t1 t2], and we know
        from the form of the rule that
          [empty |- t1 : T1 -> T2]
          [empty |- t2 : T1]
-       By the induction hypothesis, each of t1 and t2 either is a value 
+       By the induction hypothesis, each of t1 and t2 either is a value
        or can take a step. *)
     right.
     destruct IHHt1; subst...
     SCase "t1 is a value".
       destruct IHHt2; subst...
       SSCase "t2 is a value".
-      (* If both [t1] and [t2] are values, then we know that 
+      (* If both [t1] and [t2] are values, then we know that
          [t1 = tabs x T11 t12], since abstractions are the only values
-         that can have an arrow type.  But 
+         that can have an arrow type.  But
          [(tabs x T11 t12) t2 ==> [x:=t2]t12] by [ST_AppAbs]. *)
         inversion H; subst; try (solve by inversion).
         exists (subst x t2 t12)...
       SSCase "t2 steps".
-        (* If [t1] is a value and [t2 ==> t2'], then [t1 t2 ==> t1 t2'] 
+        (* If [t1] is a value and [t2 ==> t2'], then [t1 t2 ==> t1 t2']
            by [ST_App2]. *)
         inversion H0 as [t2' Hstp]. exists (tapp t1 t2')...
     SCase "t1 steps".
       (* Finally, If [t1 ==> t1'], then [t1 t2 ==> t1' t2] by [ST_App1]. *)
       inversion H as [t1' Hstp]. exists (tapp t1' t2)...
+  Case "T_Nat".
+    left...
+  Case "T_Succ". right. destruct IHHt... inversion H. subst. inversion Ht.
+    exists (tnat (S n))...
+    destruct H as [t' Ht']. exists (tsucc t')...
+  Case "T_Pred". right. destruct IHHt... inversion H. subst. inversion Ht.
+    destruct n. exists (tnat 0)... exists (tnat n)... destruct H as [t' Ht']...
+  Case "T_Mult". right. destruct IHHt1...
+    SCase "t1 is a value". destruct IHHt2...
+      (* an automation technique here would be nice ... *)
+      SSCase "t2 is a value".
   (* FILL IN HERE *)
 Qed.
+
 
 (* ###################################################################### *)
 (** *** Context Invariance *)
@@ -1540,13 +1649,13 @@ Lemma context_invariance : forall Gamma Gamma' t S,
      Gamma' |- t \in S.
 Proof with eauto.
   intros. generalize dependent Gamma'.
-  has_type_cases (induction H) Case; 
+  has_type_cases (induction H) Case;
     intros Gamma' Heqv...
   Case "T_Var".
     apply T_Var... rewrite <- Heqv...
   Case "T_Abs".
     apply T_Abs... apply IHhas_type. intros y Hafi.
-    unfold extend. 
+    unfold extend.
     destruct (eq_id_dec x y)...
   (* FILL IN HERE *)
 Qed.
@@ -1560,7 +1669,7 @@ Proof with eauto.
   has_type_cases (induction Htyp) Case; inversion Hafi; subst...
   Case "T_Abs".
     destruct IHHtyp as [T' Hctx]... exists T'.
-    unfold extend in Hctx. 
+    unfold extend in Hctx.
     rewrite neq_id in Hctx...
   (* FILL IN HERE *)
 Qed.
@@ -1573,9 +1682,9 @@ Lemma substitution_preserves_typing : forall Gamma x U v t S,
      empty |- v \in U   ->
      Gamma |- ([x:=v]t) \in S.
 Proof with eauto.
-  (* Theorem: If Gamma,x:U |- t : S and empty |- v : U, then 
+  (* Theorem: If Gamma,x:U |- t : S and empty |- v : U, then
      Gamma |- [x:=v]t : S. *)
-  intros Gamma x U v t S Htypt Htypv. 
+  intros Gamma x U v t S Htypt Htypv.
   generalize dependent Gamma. generalize dependent S.
   (* Proof: By induction on the term t.  Most cases follow directly
      from the IH, with the exception of tvar and tabs.
@@ -1599,7 +1708,7 @@ Proof with eauto.
        [Gamma |- v : U].  We have already proven a more general version
        of this theorem, called context invariance. *)
       subst.
-      unfold extend in H1. rewrite eq_id in H1. 
+      unfold extend in H1. rewrite eq_id in H1.
       inversion H1; subst. clear H1.
       eapply context_invariance...
       intros x Hcontra.
@@ -1615,10 +1724,10 @@ Proof with eauto.
          [Gamma,x:U |- tabs y T11 t0 : T11->T12]
          [Gamma,x:U,y:T11 |- t0 : T12]
          [empty |- v : U]
-       As our IH, we know that forall S Gamma, 
+       As our IH, we know that forall S Gamma,
          [Gamma,x:U |- t0 : S -> Gamma |- [x:=v]t0 : S].
-    
-       We can calculate that 
+
+       We can calculate that
          [x:=v]t = tabs y T11 (if beq_id x y then t0 else [x:=v]t0)
        And we must show that [Gamma |- [x:=v]t : T11->T12].  We know
        we will do so using [T_Abs], so it remains to be shown that:
@@ -1662,25 +1771,25 @@ Proof with eauto.
   generalize dependent t'.
   (* Proof: By induction on the given typing derivation.  Many cases are
      contradictory ([T_Var], [T_Abs]).  We show just the interesting ones. *)
-  has_type_cases (induction HT) Case; 
+  has_type_cases (induction HT) Case;
     intros t' HeqGamma HE; subst; inversion HE; subst...
   Case "T_App".
     (* If the last rule used was [T_App], then [t = t1 t2], and three rules
-       could have been used to show [t ==> t']: [ST_App1], [ST_App2], and 
-       [ST_AppAbs]. In the first two cases, the result follows directly from 
+       could have been used to show [t ==> t']: [ST_App1], [ST_App2], and
+       [ST_AppAbs]. In the first two cases, the result follows directly from
        the IH. *)
     inversion HE; subst...
     SCase "ST_AppAbs".
-      (* For the third case, suppose 
+      (* For the third case, suppose
            [t1 = tabs x T11 t12]
          and
-           [t2 = v2].  
-         We must show that [empty |- [x:=v2]t12 : T2]. 
+           [t2 = v2].
+         We must show that [empty |- [x:=v2]t12 : T2].
          We know by assumption that
              [empty |- tabs x T11 t12 : T1->T2]
          and by inversion
              [x:T1 |- t12 : T2]
-         We have already proven that substitution_preserves_typing and 
+         We have already proven that substitution_preserves_typing and
              [empty |- v2 : T1]
          by assumption, so we are done. *)
       apply substitution_preserves_typing with T1...
@@ -1692,5 +1801,3 @@ Qed.
 End STLCExtended.
 
 (* $Date: 2013-07-17 16:19:11 -0400 (Wed, 17 Jul 2013) $ *)
-
-

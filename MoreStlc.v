@@ -916,8 +916,8 @@ Module STLCExtended.
 Inductive ty : Type :=
   | TArrow : ty -> ty -> ty
   | TNat   : ty
-(*
   | TUnit  : ty
+(*
   | TProd  : ty -> ty -> ty
   | TSum   : ty -> ty -> ty
   | TList  : ty -> ty
@@ -941,12 +941,13 @@ Inductive tm : Type :=
   | tpred : tm -> tm
   | tmult : tm -> tm -> tm
   | tif0  : tm -> tm -> tm -> tm
-  (* pairs *)
-(*  | tpair : tm -> tm -> tm
-  | tfst : tm -> tm
-  | tsnd : tm -> tm
   (* units *)
   | tunit : tm
+(*
+  (* pairs *)
+  | tpair : tm -> tm -> tm
+  | tfst : tm -> tm
+  | tsnd : tm -> tm
   (* let *)
   | tlet : id -> tm -> tm -> tm
           (* i.e., [let x = t1 in t2] *)
@@ -982,9 +983,10 @@ Tactic Notation "t_cases" tactic(first) ident(c) :=
   [ Case_aux c "tvar" | Case_aux c "tapp" | Case_aux c "tabs"
   | Case_aux c "tnat" | Case_aux c "tsucc" | Case_aux c "tpred"
   | Case_aux c "tmult" | Case_aux c "tif0"
+  | Case_aux c "tunit"
   (*
   | Case_aux c "tpair" | Case_aux c "tfst" | Case_aux c "tsnd"
-  | Case_aux c "tunit" | Case_aux c "tlet"
+  | Case_aux c "tlet"
   | Case_aux c "tinl" | Case_aux c "tinr" | Case_aux c "tcase"
   | Case_aux c "tnil" | Case_aux c "tcons" | Case_aux c "tlcase"
   | Case_aux c "tfix"
@@ -1007,6 +1009,8 @@ Fixpoint subst (x:id) (s:tm) (t:tm) : tm :=
   | tpred t => tpred (subst x s t)
   | tmult t1 t2 => tmult (subst x s t1) (subst x s t2)
   | tif0 t1 t2 t3 => tif0 (subst x s t1) (subst x s t2) (subst x s t3)
+  | tunit => tunit
+  (*| tpair t1 t2 => tpair (subst x s t1) (subst x s t2)*)
   end.
 
 Notation "'[' x ':=' s ']' t" := (subst x s t) (at level 20).
@@ -1022,6 +1026,8 @@ Inductive value : tm -> Prop :=
       value (tabs x T11 t12)
   | v_nat : forall n,
       value (tnat n)
+  | v_unit :
+      value tunit
   .
 
 Hint Constructors value.
@@ -1130,6 +1136,8 @@ Inductive has_type : context -> tm -> ty -> Prop :=
       Gamma |- t2 \in T ->
       Gamma |- t3 \in T ->
       Gamma |- tif0 t1 t2 t3 \in T
+  | T_Unit : forall Gamma,
+      Gamma |- tunit \in TUnit
 
 where "Gamma '|-' t '\in' T" := (has_type Gamma t T) : type_scope.
 
@@ -1143,6 +1151,7 @@ Tactic Notation "has_type_cases" tactic(first) ident(c) :=
   | Case_aux c "T_Pred"
   | Case_aux c "T_Mult"
   | Case_aux c "T_If0"
+  | Case_aux c "T_Unit"
 ].
 
 (* ###################################################################### *)
@@ -1555,6 +1564,12 @@ End Examples.
 (* ###################################################################### *)
 (** *** Progress *)
 
+Lemma nat_value : forall t Gamma,
+  Gamma |- t \in TNat -> value t -> exists n, t = tnat n.
+Proof.
+  intros. inversion H0; subst; inversion H.
+  exists n. reflexivity.
+Qed.
 
 Theorem progress : forall t T,
      empty |- t \in T ->
@@ -1604,29 +1619,36 @@ Proof with eauto.
       inversion H as [t1' Hstp]. exists (tapp t1' t2)...
   Case "T_Nat".
     left...
-  Case "T_Succ". right. destruct IHHt... inversion H. subst. inversion Ht.
+  Case "T_Succ". right. destruct IHHt...
+    inversion H. subst. inversion Ht.
     exists (tnat (S n))...
+    subst. inversion Ht.
     destruct H as [t' Ht']. exists (tsucc t')...
   Case "T_Pred". right. destruct IHHt... inversion H. subst. inversion Ht.
-    destruct n. exists (tnat 0)... exists (tnat n)... destruct H as [t' Ht']...
+    destruct n. exists (tnat 0)... exists (tnat n)...
+    subst. inversion Ht.
+    destruct H as [t' Ht']...
   Case "T_Mult". right. destruct IHHt1...
     SCase "t1 is a value".
-      (* discharge t1 /= tnat n *) inversion H. subst. inversion Ht1.
+      apply nat_value in Ht1... inversion Ht1 as [n1 Ht1n1]. clear Ht1.
       destruct IHHt2...
-      (* an automation technique here would be nice ... *)
       SSCase "t2 is a value".
-        (* discharge t1 /= tnat n *) inversion H1. subst. inversion Ht2.
-        exists (tnat (n*n0)). auto.
+        apply nat_value in Ht2... inversion Ht2 as [n2 Ht1n2]. clear Ht2.
+        subst.
+        exists (tnat (n1*n2))...
       SSCase "t2 steps".
-        inversion H1. exists (tmult (tnat n) x)...
+        inversion H0 as [t2' Ht2'].
+        exists (tmult t1 t2')...
     SCase "t1 steps".
       inversion H as [t1' Ht1']. exists (tmult t1' t2)...
   Case "T_If0". right. destruct IHHt1...
     SCase "t1 is a value".
-      (* discharge t1 /= tnat n *) inversion H. subst. inversion Ht1.
-      destruct n. exists t2... exists t3...
+      apply nat_value in Ht1... inversion Ht1 as [n1 Hn1]. subst.
+      destruct n1. exists t2... exists t3...
     SCase "t1 steps".
       inversion H as [t1' Ht1']. exists (tif0 t1' t2 t3)...
+  Case "T_Unit".
+      left...
 Qed.
 
 
@@ -1782,7 +1804,6 @@ Proof with eauto.
       intros z Hafi. unfold extend.
       destruct (eq_id_dec y z)...
       subst. rewrite neq_id...
-  (* FILL IN HERE *)
 Qed.
 
 (* ###################################################################### *)

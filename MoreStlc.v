@@ -927,8 +927,9 @@ Inductive ty : Type :=
 Tactic Notation "T_cases" tactic(first) ident(c) :=
   first;
   [ Case_aux c "TArrow" | Case_aux c "TNat"
-  (* | Case_aux c "TProd" | Case_aux c "TUnit"
-  | Case_aux c "TSum" | Case_aux c "TList" *)  ].
+  | Case_aux c "TProd" | Case_aux c "TUnit" (*
+  | Case_aux c "TSum" | Case_aux c "TList" *)
+  ].
 
 Inductive tm : Type :=
   (* pure STLC *)
@@ -947,10 +948,10 @@ Inductive tm : Type :=
   | tpair : tm -> tm -> tm
   | tfst : tm -> tm
   | tsnd : tm -> tm
-(*
   (* let *)
   | tlet : id -> tm -> tm -> tm
           (* i.e., [let x = t1 in t2] *)
+(*
   (* sums *)
   | tinl : ty -> tm -> tm
   | tinr : ty -> tm -> tm
@@ -985,8 +986,8 @@ Tactic Notation "t_cases" tactic(first) ident(c) :=
   | Case_aux c "tmult" | Case_aux c "tif0"
   | Case_aux c "tunit"
   | Case_aux c "tpair" | Case_aux c "tfst" | Case_aux c "tsnd"
-  (*
   | Case_aux c "tlet"
+  (*
   | Case_aux c "tinl" | Case_aux c "tinr" | Case_aux c "tcase"
   | Case_aux c "tnil" | Case_aux c "tcons" | Case_aux c "tlcase"
   | Case_aux c "tfix"
@@ -1013,7 +1014,10 @@ Fixpoint subst (x:id) (s:tm) (t:tm) : tm :=
   | tpair t1 t2 => tpair (subst x s t1) (subst x s t2)
   | tfst t => tfst (subst x s t)
   | tsnd t => tsnd (subst x s t)
-  (*| tpair t1 t2 => tpair (subst x s t1) (subst x s t2)*)
+  (* if x appears free in t1 then we just substitute it. this is a bit of
+     a hack, and different from e.g. Haskells semantics - but we're not
+     lazy here ...  *)
+  | tlet y t1 t2 => tlet y (subst x s t1) (if eq_id_dec x y then t2 else (subst x s t2))
   end.
 
 Notation "'[' x ':=' s ']' t" := (subst x s t) (at level 20).
@@ -1097,6 +1101,12 @@ Inductive step : tm -> tm -> Prop :=
   | ST_SndPair : forall t1 t2,
          value (tpair t1 t2) ->
          tsnd (tpair t1 t2) ==> t2
+  | ST_Let1 : forall x t1 t1' t2,
+         t1 ==> t1' ->
+         tlet x t1 t2 ==> tlet x t1' t2
+  | ST_LetValue : forall x v1 t2,
+         value v1 ->
+         tlet x v1 t2 ==> [x:=v1]t2
 
 where "t1 '==>' t2" := (step t1 t2).
 
@@ -1120,6 +1130,8 @@ Tactic Notation "step_cases" tactic(first) ident(c) :=
   | Case_aux c "ST_FstPair"
   | Case_aux c "ST_Snd"
   | Case_aux c "ST_SndPair"
+  | Case_aux c "ST_Let1"
+  | Case_aux c "ST_LetValue"
   ].
 
 Notation multistep := (multi step).
@@ -1178,6 +1190,10 @@ Inductive has_type : context -> tm -> ty -> Prop :=
   | T_Snd : forall t T1 T2 Gamma,
       Gamma |- t \in (TProd T1 T2) ->
       Gamma |- (tsnd t) \in T2
+  | T_Let : forall x t1 t2 T1 T2 Gamma,
+      Gamma |- t1 \in T1 ->
+      extend Gamma x T1 |- t2 \in T2 ->
+      Gamma |- (tlet x t1 t2) \in T2
 
 where "Gamma '|-' t '\in' T" := (has_type Gamma t T) : type_scope.
 
@@ -1195,6 +1211,7 @@ Tactic Notation "has_type_cases" tactic(first) ident(c) :=
   | Case_aux c "T_Pair"
   | Case_aux c "T_Fst"
   | Case_aux c "T_Snd"
+  | Case_aux c "T_Let"
 ].
 
 (* ###################################################################### *)
@@ -1318,7 +1335,6 @@ Proof. unfold test. normalize. Qed.
 
 End Prodtest.
 
-(*
 (** *** [let] *)
 
 Module LetTest.
@@ -1330,7 +1346,7 @@ Definition test :=
     (tpred (tnat 6))
     (tsucc (tvar x)).
 
-(*
+
 Example typechecks :
   (@empty ty) |- test \in TNat.
 Proof. unfold test. eauto 15. Qed.
@@ -1338,12 +1354,12 @@ Proof. unfold test. eauto 15. Qed.
 Example reduces :
   test ==>* tnat 6.
 Proof. unfold test. normalize. Qed.
-*)
+
 
 End LetTest.
 
 (** *** Sums *)
-
+(*
 Module Sumtest1.
 
 (* case (inl Nat 5) of
@@ -1716,6 +1732,9 @@ Proof with eauto.
       destruct Ht2. destruct H1. destruct H2. destruct H3.
       subst. exists t2...
     SCase "t steps". inversion H. exists (tsnd x)...
+  Case "T_Let". right. destruct IHHt1...
+    SCase "t1 steps".
+      inversion H as [t1' Ht1']. exists (tlet x t1' t2)...
 Qed.
 
 
@@ -1766,6 +1785,13 @@ Inductive appears_free_in : id -> tm -> Prop :=
   | afi_snd : forall x t,
         appears_free_in x t ->
         appears_free_in x (tsnd t)
+  | afi_let1 : forall x y t1 t2,
+        appears_free_in x t1 ->
+        appears_free_in x (tlet y t1 t2)
+  | afi_let2 : forall x y t1 t2,
+        y <> x ->
+        appears_free_in x t2 ->
+        appears_free_in x (tlet y t1 t2)
   .
 
 Hint Constructors appears_free_in.
@@ -1790,6 +1816,9 @@ Proof with eauto.
     apply T_If0...
   Case "T_Pair".
     apply T_Pair...
+  Case "T_Let".
+    eapply T_Let... eapply IHhas_type2... intros y Hafi.
+    unfold extend. destruct (eq_id_dec x y)...
 Qed.
 
 Lemma free_in_context : forall x t T Gamma,
@@ -1803,10 +1832,28 @@ Proof with eauto.
     destruct IHHtyp as [T' Hctx]... exists T'.
     unfold extend in Hctx.
     rewrite neq_id in Hctx...
+  Case "T_Let".
+    apply IHHtyp2 in H4. inversion H4 as [T' HT']. rewrite extend_neq in HT'...
 Qed.
 
 (* ###################################################################### *)
 (** *** Substitution *)
+
+Axiom functional_extensionality : forall {X Y: Type} {f g : X -> Y},
+    (forall (x: X), f x = g x) ->  f = g.
+
+Lemma extend_ovwr_eq : forall Gamma x T (U:ty),
+  extend (extend Gamma x U) x T = extend Gamma x T.
+Proof with auto.
+  intros Gamma x T U. apply functional_extensionality. intros y. unfold extend. destruct (eq_id_dec x y)...
+Qed.
+
+Lemma extend_neq_swap : forall Gamma x y (T U:ty),
+  x <> y -> extend (extend Gamma x T) y U = extend (extend Gamma y U) x T.
+Proof with auto.
+  intros. apply functional_extensionality. intros z. unfold extend. destruct (eq_id_dec y z)... subst...
+  destruct (eq_id_dec x z). contradiction H... reflexivity.
+Qed.
 
 Lemma substitution_preserves_typing : forall Gamma x U v t S,
      (extend Gamma x U) |- t \in S  ->
@@ -1885,6 +1932,9 @@ Proof with eauto.
       intros z Hafi. unfold extend.
       destruct (eq_id_dec y z)...
       subst. rewrite neq_id...
+  Case "tlet".
+    eapply T_Let... destruct (eq_id_dec x i)... subst... rewrite extend_ovwr_eq in H5...
+    apply IHt2. rewrite extend_neq_swap...
 Qed.
 
 (* ###################################################################### *)
@@ -1926,6 +1976,8 @@ Proof with eauto.
       inversion HT1...
   Case "T_Fst". inversion HT...
   Case "T_Snd". inversion HT...
+  Case "T_Let".
+    apply substitution_preserves_typing with T1...
 Qed.
 (** [] *)
 

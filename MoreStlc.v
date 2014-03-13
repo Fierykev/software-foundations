@@ -1131,7 +1131,7 @@ Inductive has_type : context -> tm -> ty -> Prop :=
       Gamma |- t3 \in T ->
       Gamma |- tif0 t1 t2 t3 \in T
 
-where "Gamma '|-' t '\in' T" := (has_type Gamma t T).
+where "Gamma '|-' t '\in' T" := (has_type Gamma t T) : type_scope.
 
 Hint Constructors has_type.
 
@@ -1555,13 +1555,6 @@ End Examples.
 (* ###################################################################### *)
 (** *** Progress *)
 
-(*
-Ltac value_nat_nat :=
-  match goal with
-    Hv: value ?t, HNat: has_type \empty ?t TNat |- _ =>
-      inversion Hv. subst. inversion HNat.
-  end.
-*)
 
 Theorem progress : forall t T,
      empty |- t \in T ->
@@ -1617,10 +1610,23 @@ Proof with eauto.
   Case "T_Pred". right. destruct IHHt... inversion H. subst. inversion Ht.
     destruct n. exists (tnat 0)... exists (tnat n)... destruct H as [t' Ht']...
   Case "T_Mult". right. destruct IHHt1...
-    SCase "t1 is a value". destruct IHHt2...
+    SCase "t1 is a value".
+      (* discharge t1 /= tnat n *) inversion H. subst. inversion Ht1.
+      destruct IHHt2...
       (* an automation technique here would be nice ... *)
       SSCase "t2 is a value".
-  (* FILL IN HERE *)
+        (* discharge t1 /= tnat n *) inversion H1. subst. inversion Ht2.
+        exists (tnat (n*n0)). auto.
+      SSCase "t2 steps".
+        inversion H1. exists (tmult (tnat n) x)...
+    SCase "t1 steps".
+      inversion H as [t1' Ht1']. exists (tmult t1' t2)...
+  Case "T_If0". right. destruct IHHt1...
+    SCase "t1 is a value".
+      (* discharge t1 /= tnat n *) inversion H. subst. inversion Ht1.
+      destruct n. exists t2... exists t3...
+    SCase "t1 steps".
+      inversion H as [t1' Ht1']. exists (tif0 t1' t2 t3)...
 Qed.
 
 

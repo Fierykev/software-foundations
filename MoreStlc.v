@@ -917,8 +917,8 @@ Inductive ty : Type :=
   | TArrow : ty -> ty -> ty
   | TNat   : ty
   | TUnit  : ty
-(*
   | TProd  : ty -> ty -> ty
+(*
   | TSum   : ty -> ty -> ty
   | TList  : ty -> ty
 *)
@@ -943,11 +943,11 @@ Inductive tm : Type :=
   | tif0  : tm -> tm -> tm -> tm
   (* units *)
   | tunit : tm
-(*
   (* pairs *)
   | tpair : tm -> tm -> tm
   | tfst : tm -> tm
   | tsnd : tm -> tm
+(*
   (* let *)
   | tlet : id -> tm -> tm -> tm
           (* i.e., [let x = t1 in t2] *)
@@ -984,8 +984,8 @@ Tactic Notation "t_cases" tactic(first) ident(c) :=
   | Case_aux c "tnat" | Case_aux c "tsucc" | Case_aux c "tpred"
   | Case_aux c "tmult" | Case_aux c "tif0"
   | Case_aux c "tunit"
-  (*
   | Case_aux c "tpair" | Case_aux c "tfst" | Case_aux c "tsnd"
+  (*
   | Case_aux c "tlet"
   | Case_aux c "tinl" | Case_aux c "tinr" | Case_aux c "tcase"
   | Case_aux c "tnil" | Case_aux c "tcons" | Case_aux c "tlcase"
@@ -1010,6 +1010,9 @@ Fixpoint subst (x:id) (s:tm) (t:tm) : tm :=
   | tmult t1 t2 => tmult (subst x s t1) (subst x s t2)
   | tif0 t1 t2 t3 => tif0 (subst x s t1) (subst x s t2) (subst x s t3)
   | tunit => tunit
+  | tpair t1 t2 => tpair (subst x s t1) (subst x s t2)
+  | tfst t => tfst (subst x s t)
+  | tsnd t => tsnd (subst x s t)
   (*| tpair t1 t2 => tpair (subst x s t1) (subst x s t2)*)
   end.
 
@@ -1028,6 +1031,8 @@ Inductive value : tm -> Prop :=
       value (tnat n)
   | v_unit :
       value tunit
+  | v_pair : forall v1 v2,
+      value v1 -> value v2 -> value (tpair v1 v2)
   .
 
 Hint Constructors value.
@@ -1073,6 +1078,25 @@ Inductive step : tm -> tm -> Prop :=
          tif0 (tnat O) t2 t3 ==> t2
   | ST_If0Succ : forall n t2 t3,
          tif0 (tnat (S n)) t2 t3 ==> t3
+  | ST_Pair1 : forall t1 t1' t2,
+         t1 ==> t1' ->
+         tpair t1 t2 ==> tpair t1' t2
+  | ST_Pair2 : forall v1 t2 t2',
+         value v1 ->
+         t2 ==> t2' ->
+         tpair v1 t2 ==> tpair v1 t2'
+  | ST_Fst : forall t t',
+         t ==> t' ->
+         tfst t ==> tfst t'
+  | ST_FstPair : forall t1 t2,
+         value (tpair t1 t2) ->
+         tfst (tpair t1 t2) ==> t1
+  | ST_Snd : forall t t',
+         t ==> t' ->
+         tsnd t ==> tsnd t'
+  | ST_SndPair : forall t1 t2,
+         value (tpair t1 t2) ->
+         tsnd (tpair t1 t2) ==> t2
 
 where "t1 '==>' t2" := (step t1 t2).
 
@@ -1090,6 +1114,12 @@ Tactic Notation "step_cases" tactic(first) ident(c) :=
   | Case_aux c "ST_If0"
   | Case_aux c "ST_If0Zero"
   | Case_aux c "ST_If0Succ"
+  | Case_aux c "ST_Pair1"
+  | Case_aux c "ST_Pair2"
+  | Case_aux c "ST_Fst"
+  | Case_aux c "ST_FstPair"
+  | Case_aux c "ST_Snd"
+  | Case_aux c "ST_SndPair"
   ].
 
 Notation multistep := (multi step).
@@ -1138,6 +1168,16 @@ Inductive has_type : context -> tm -> ty -> Prop :=
       Gamma |- tif0 t1 t2 t3 \in T
   | T_Unit : forall Gamma,
       Gamma |- tunit \in TUnit
+  | T_Pair : forall t1 t2 T1 T2 Gamma,
+      Gamma |- t1 \in T1 ->
+      Gamma |- t2 \in T2 ->
+      Gamma |- (tpair t1 t2) \in (TProd T1 T2)
+  | T_Fst : forall t T1 T2 Gamma,
+      Gamma |- t \in (TProd T1 T2) ->
+      Gamma |- (tfst t) \in T1
+  | T_Snd : forall t T1 T2 Gamma,
+      Gamma |- t \in (TProd T1 T2) ->
+      Gamma |- (tsnd t) \in T2
 
 where "Gamma '|-' t '\in' T" := (has_type Gamma t T) : type_scope.
 
@@ -1152,6 +1192,9 @@ Tactic Notation "has_type_cases" tactic(first) ident(c) :=
   | Case_aux c "T_Mult"
   | Case_aux c "T_If0"
   | Case_aux c "T_Unit"
+  | Case_aux c "T_Pair"
+  | Case_aux c "T_Fst"
+  | Case_aux c "T_Snd"
 ].
 
 (* ###################################################################### *)
@@ -1253,7 +1296,6 @@ Qed.
 End Numtest.
 
 (** *** Products *)
-(*
 Module Prodtest.
 
 (* ((5,6),7).fst.snd *)
@@ -1266,7 +1308,6 @@ Definition test :=
           (tnat 6))
         (tnat 7))).
 
-(*
 Example typechecks :
   (@empty ty) |- test \in TNat.
 Proof. unfold test. eauto 15. Qed.
@@ -1274,10 +1315,10 @@ Proof. unfold test. eauto 15. Qed.
 Example reduces :
   test ==>* tnat 6.
 Proof. unfold test. normalize. Qed.
-*)
 
 End Prodtest.
 
+(*
 (** *** [let] *)
 
 Module LetTest.
@@ -1571,6 +1612,14 @@ Proof.
   exists n. reflexivity.
 Qed.
 
+Lemma pair_value : forall t T1 T2 Gamma,
+  Gamma |- t \in (TProd T1 T2) -> value t ->
+  exists t1 t2, Gamma |- t1 \in T1 /\ Gamma |- t2 \in T2 /\ t = tpair t1 t2 /\ value t1 /\ value t2.
+Proof.
+  intros. inversion H0; subst; inversion H; subst.
+  exists v1. exists v2. auto.
+Qed.
+
 Theorem progress : forall t T,
      empty |- t \in T ->
      value t \/ exists t', t ==> t'.
@@ -1620,13 +1669,12 @@ Proof with eauto.
   Case "T_Nat".
     left...
   Case "T_Succ". right. destruct IHHt...
-    inversion H. subst. inversion Ht.
+    apply nat_value in Ht... inversion Ht as [n Hn]. subst.
     exists (tnat (S n))...
-    subst. inversion Ht.
     destruct H as [t' Ht']. exists (tsucc t')...
-  Case "T_Pred". right. destruct IHHt... inversion H. subst. inversion Ht.
+  Case "T_Pred". right. destruct IHHt...
+    apply nat_value in Ht... inversion Ht as [n Hn]. subst.
     destruct n. exists (tnat 0)... exists (tnat n)...
-    subst. inversion Ht.
     destruct H as [t' Ht']...
   Case "T_Mult". right. destruct IHHt1...
     SCase "t1 is a value".
@@ -1649,6 +1697,25 @@ Proof with eauto.
       inversion H as [t1' Ht1']. exists (tif0 t1' t2 t3)...
   Case "T_Unit".
       left...
+  Case "T_Pair". destruct IHHt1...
+    SCase "t1 is a value".
+      destruct IHHt2...
+      SSCase "t2 steps".
+        right... inversion H0 as [t2' Ht2']. exists (tpair t1 t2')...
+    SCase "t1 steps".
+      right... inversion H as [t1' Ht1']. exists (tpair t1' t2)...
+  Case "T_Fst". right. destruct IHHt...
+    SCase "t is a value". apply pair_value in Ht...
+      inversion Ht as [t1 Ht1]. clear Ht. inversion Ht1 as [t2 Ht2]. clear Ht1.
+      destruct Ht2. destruct H1. destruct H2. destruct H3.
+      subst. exists t1...
+    SCase "t steps". inversion H. exists (tfst x)...
+  Case "T_Snd". right. destruct IHHt...
+    SCase "t is a value". apply pair_value in Ht...
+      inversion Ht as [t1 Ht1]. clear Ht. inversion Ht1 as [t2 Ht2]. clear Ht1.
+      destruct Ht2. destruct H1. destruct H2. destruct H3.
+      subst. exists t2...
+    SCase "t steps". inversion H. exists (tsnd x)...
 Qed.
 
 

@@ -1754,6 +1754,18 @@ Inductive appears_free_in : id -> tm -> Prop :=
   | afi_tif3 : forall x t1 t2 t3,
         appears_free_in x t3 ->
         appears_free_in x (tif0 t1 t2 t3)
+  | afi_pair1 : forall x t1 t2,
+        appears_free_in x t1 ->
+        appears_free_in x (tpair t1 t2)
+  | afi_pair2 : forall x t1 t2,
+        appears_free_in x t2 ->
+        appears_free_in x (tpair t1 t2)
+  | afi_fst : forall x t,
+        appears_free_in x t ->
+        appears_free_in x (tfst t)
+  | afi_snd : forall x t,
+        appears_free_in x t ->
+        appears_free_in x (tsnd t)
   .
 
 Hint Constructors appears_free_in.
@@ -1776,6 +1788,8 @@ Proof with eauto.
     apply T_Mult...
   Case "T_If0".
     apply T_If0...
+  Case "T_Pair".
+    apply T_Pair...
 Qed.
 
 Lemma free_in_context : forall x t T Gamma,
@@ -1910,7 +1924,8 @@ Proof with eauto.
          by assumption, so we are done. *)
       apply substitution_preserves_typing with T1...
       inversion HT1...
-  (* FILL IN HERE *)
+  Case "T_Fst". inversion HT...
+  Case "T_Snd". inversion HT...
 Qed.
 (** [] *)
 

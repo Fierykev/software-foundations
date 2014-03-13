@@ -1644,7 +1644,27 @@ Inductive appears_free_in : id -> tm -> Prop :=
         y <> x  ->
         appears_free_in x t12 ->
         appears_free_in x (tabs y T11 t12)
-  (* FILL IN HERE *)
+  | afi_succ : forall x t,
+        appears_free_in x t ->
+        appears_free_in x (tsucc t)
+  | afi_pred : forall x t,
+        appears_free_in x t ->
+        appears_free_in x (tpred t)
+  | afi_mult1 : forall x t1 t2,
+        appears_free_in x t1 ->
+        appears_free_in x (tmult t1 t2)
+  | afi_mult2 : forall x t1 t2,
+        appears_free_in x t2 ->
+        appears_free_in x (tmult t1 t2)
+  | afi_tif1 : forall x t1 t2 t3,
+        appears_free_in x t1 ->
+        appears_free_in x (tif0 t1 t2 t3)
+  | afi_tif2 : forall x t1 t2 t3,
+        appears_free_in x t2 ->
+        appears_free_in x (tif0 t1 t2 t3)
+  | afi_tif3 : forall x t1 t2 t3,
+        appears_free_in x t3 ->
+        appears_free_in x (tif0 t1 t2 t3)
   .
 
 Hint Constructors appears_free_in.
@@ -1663,7 +1683,10 @@ Proof with eauto.
     apply T_Abs... apply IHhas_type. intros y Hafi.
     unfold extend.
     destruct (eq_id_dec x y)...
-  (* FILL IN HERE *)
+  Case "T_Mult".
+    apply T_Mult...
+  Case "T_If0".
+    apply T_If0...
 Qed.
 
 Lemma free_in_context : forall x t T Gamma,
@@ -1677,7 +1700,6 @@ Proof with eauto.
     destruct IHHtyp as [T' Hctx]... exists T'.
     unfold extend in Hctx.
     rewrite neq_id in Hctx...
-  (* FILL IN HERE *)
 Qed.
 
 (* ###################################################################### *)

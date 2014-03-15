@@ -960,10 +960,8 @@ Inductive tm : Type :=
   | tcons : tm -> tm -> tm
   | tlcase : tm -> tm -> id -> id -> tm -> tm
           (* i.e., [lcase t1 of | nil -> t2 | x::y -> t3] *)
-(*
   (* fix *)
   | tfix  : tm -> tm
-*)
 .
 
 (** Note that, for brevity, we've omitted booleans and instead
@@ -988,9 +986,7 @@ Tactic Notation "t_cases" tactic(first) ident(c) :=
   | Case_aux c "tlet"
   | Case_aux c "tinl" | Case_aux c "tinr" | Case_aux c "tcase"
   | Case_aux c "tnil" | Case_aux c "tcons" | Case_aux c "tlcase"
-  (*
   | Case_aux c "tfix"
-  *)
   ].
 
 (* ###################################################################### *)
@@ -1028,6 +1024,7 @@ Fixpoint subst (x:id) (s:tm) (t:tm) : tm :=
                                    (if (eq_id_dec x y)
                                     then t2
                                     else if (eq_id_dec x ys) then t2 else (subst x s t2))
+  | tfix t => tfix (subst x s t)
   end.
 
 Notation "'[' x ':=' s ']' t" := (subst x s t) (at level 20).
@@ -1155,6 +1152,11 @@ Inductive step : tm -> tm -> Prop :=
   | ST_LcaseCons : forall vh vt t1 xh xt t2,
          value (tcons vh vt) ->
          tlcase (tcons vh vt) t1 xh xt t2 ==> [xh:=vh]([xt:=vt]t2)
+  | ST_Fix1 : forall t t',
+         t ==> t' ->
+         tfix t ==> tfix t'
+  | ST_FixAbs : forall x T t,
+         tfix (tabs x T t) ==> [x:=tfix (tabs x T t)]t
 
 where "t1 '==>' t2" := (step t1 t2).
 
@@ -1192,6 +1194,8 @@ Tactic Notation "step_cases" tactic(first) ident(c) :=
   | Case_aux c "ST_Lcase1"
   | Case_aux c "ST_LcaseNil"
   | Case_aux c "ST_LcaseCons"
+  | Case_aux c "ST_Fix1"
+  | Case_aux c "ST_FixAbs"
   ].
 
 Notation multistep := (multi step).
@@ -1276,6 +1280,9 @@ Inductive has_type : context -> tm -> ty -> Prop :=
       Gamma |- t1 \in T ->
       extend (extend Gamma xh S) xt (TList S) |- t2 \in T ->
       Gamma |- (tlcase t0 t1 xh xt t2) \in T
+  | T_Fix : forall Gamma t T,
+      Gamma |- t \in (TArrow T T) ->
+      Gamma |- (tfix t) \in T
 
 where "Gamma '|-' t '\in' T" := (has_type Gamma t T) : type_scope.
 
@@ -1300,6 +1307,7 @@ Tactic Notation "has_type_cases" tactic(first) ident(c) :=
   | Case_aux c "T_Nil"
   | Case_aux c "T_Cons"
   | Case_aux c "T_Lcase"
+  | Case_aux c "T_Fix"
 ].
 
 (* ###################################################################### *)
@@ -1358,10 +1366,8 @@ Hint Extern 2 (has_type _ (tapp _ _) _) =>
 (* You'll want to uncomment the following line once
    you've defined the [T_Lcase] constructor for the typing
    relation: *)
-(*
 Hint Extern 2 (has_type _ (tlcase _ _ _ _ _) _) =>
   eapply T_Lcase; auto.
-*)
 Hint Extern 2 (_ = _) => compute; reflexivity.
 
 (** *** Numbers *)
@@ -1524,7 +1530,6 @@ Proof. unfold test. normalize. Qed.
 End ListTest.
 
 (** *** [fix] *)
-(*
 Module FixTest1.
 
 (* fact := fix
@@ -1545,18 +1550,14 @@ Definition fact :=
 (** (Warning: you may be able to typecheck [fact] but still have some
     rules wrong!) *)
 
-(*
 Example fact_typechecks :
   (@empty ty) |- fact \in (TArrow TNat TNat).
 Proof. unfold fact. auto 10.
 Qed.
-*)
 
-(*
 Example fact_example:
   (tapp fact (tnat 4)) ==>* (tnat 24).
 Proof. unfold fact. normalize. Qed.
-*)
 
 End FixTest1.
 
@@ -1580,7 +1581,6 @@ Definition map :=
             a l (tcons (tapp (tvar g) (tvar a))
                          (tapp (tvar f) (tvar l))))))).
 
-(*
 (* Make sure you've uncommented the last [Hint Extern] above... *)
 Example map_typechecks :
   empty |- map \in
@@ -1594,7 +1594,6 @@ Example map_example :
          (tcons (tnat 1) (tcons (tnat 2) (tnil TNat)))
   ==>* (tcons (tnat 2) (tcons (tnat 3) (tnil TNat))).
 Proof. unfold map. normalize. Qed.
-*)
 
 End FixTest2.
 
@@ -1621,24 +1620,18 @@ Definition equal :=
                               (tpred (tvar m)))
                       (tpred (tvar n)))))))).
 
-(*
 Example equal_typechecks :
   (@empty ty) |- equal \in (TArrow TNat (TArrow TNat TNat)).
 Proof. unfold equal. auto 10.
 Qed.
-*)
 
-(*
 Example equal_example1:
   (tapp (tapp equal (tnat 4)) (tnat 4)) ==>* (tnat 1).
 Proof. unfold equal. normalize. Qed.
-*)
 
-(*
 Example equal_example2:
   (tapp (tapp equal (tnat 4)) (tnat 5)) ==>* (tnat 0).
 Proof. unfold equal. normalize. Qed.
-*)
 
 End FixTest3.
 
@@ -1674,21 +1667,16 @@ Definition eotest :=
     (tapp (tvar even) (tnat 3))
     (tapp (tvar even) (tnat 4))))).
 
-(*
 Example eotest_typechecks :
   (@empty ty) |- eotest \in (TProd TNat TNat).
 Proof. unfold eotest. eauto 30.
 Qed.
-*)
 
-(*
 Example eotest_example1:
   eotest ==>* (tpair (tnat 0) (tnat 1)).
 Proof. unfold eotest. normalize. Qed.
-*)
 
 End FixTest4.
-*)
 End Examples.
 
 (* ###################################################################### *)
@@ -1722,6 +1710,14 @@ Lemma list_value : forall t T Gamma,
 Proof.
   intros. inversion H0; subst; inversion H; subst. left. auto. inversion H0; subst. right.
   exists v1, v2. auto.
+Qed.
+
+Lemma arrow_value : forall t T1 T2 Gamma,
+  Gamma |- t \in (TArrow T1 T2) -> value t ->
+  exists x t2, t = tabs x T1 t2 /\ extend Gamma x T1 |- t2 \in T2.
+Proof.
+  intros. inversion H0; subst; inversion H; subst. exists x, t12...
+  split. auto. auto.
 Qed.
 
 Theorem progress : forall t T,
@@ -1840,6 +1836,10 @@ Proof with eauto.
       SSCase "t0 = tcons vh vt". inversion H0. inversion H1. inversion H2. inversion H4.
         subst. exists ([xh:=x]([xt:=x0]t2))...
     SCase "t0 steps". inversion H. exists (tlcase x t1 xh xt t2)...
+  Case "T_Fix". right. destruct IHHt...
+    SCase "t is a value". apply arrow_value in Ht... destruct Ht. destruct H0. destruct H0. subst.
+      exists ([x:=tfix (tabs x T x0)]x0)...
+    SCase "t steps". inversion H. exists (tfix x)...
 Qed.
 
 
@@ -1930,6 +1930,9 @@ Inductive appears_free_in : id -> tm -> Prop :=
         x <> xh -> x <> xt ->
         appears_free_in x t2 ->
         appears_free_in x (tlcase t0 t1 xh xt t2)
+  | afi_fix : forall x t,
+        appears_free_in x t ->
+        appears_free_in x (tfix t)
   .
 
 Hint Constructors appears_free_in.
@@ -2151,6 +2154,8 @@ Proof with eauto.
   Case "T_Lcase".
     inversion HT1. subst.
     apply substitution_preserves_typing with S... apply substitution_preserves_typing with (TList S)...
+  Case "T_Fix".
+    apply substitution_preserves_typing with T... inversion HT...
 Qed.
 (** [] *)
 

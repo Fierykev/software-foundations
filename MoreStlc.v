@@ -919,9 +919,7 @@ Inductive ty : Type :=
   | TUnit  : ty
   | TProd  : ty -> ty -> ty
   | TSum   : ty -> ty -> ty
-(*
   | TList  : ty -> ty
-*)
 .
 
 Tactic Notation "T_cases" tactic(first) ident(c) :=
@@ -929,9 +927,7 @@ Tactic Notation "T_cases" tactic(first) ident(c) :=
   [ Case_aux c "TArrow" | Case_aux c "TNat"
   | Case_aux c "TProd" | Case_aux c "TUnit"
   | Case_aux c "TSum"
-  (*
   | Case_aux c "TList"
-  *)
   ].
 
 Inductive tm : Type :=
@@ -959,12 +955,12 @@ Inductive tm : Type :=
   | tinr : ty -> tm -> tm
   | tcase : tm -> id -> tm -> id -> tm -> tm
           (* i.e., [case t0 of inl x1 => t1 | inr x2 => t2] *)
-  (*
   (* lists *)
   | tnil : ty -> tm
   | tcons : tm -> tm -> tm
   | tlcase : tm -> tm -> id -> id -> tm -> tm
           (* i.e., [lcase t1 of | nil -> t2 | x::y -> t3] *)
+(*
   (* fix *)
   | tfix  : tm -> tm
 *)
@@ -991,8 +987,8 @@ Tactic Notation "t_cases" tactic(first) ident(c) :=
   | Case_aux c "tpair" | Case_aux c "tfst" | Case_aux c "tsnd"
   | Case_aux c "tlet"
   | Case_aux c "tinl" | Case_aux c "tinr" | Case_aux c "tcase"
-  (*
   | Case_aux c "tnil" | Case_aux c "tcons" | Case_aux c "tlcase"
+  (*
   | Case_aux c "tfix"
   *)
   ].
@@ -1026,6 +1022,12 @@ Fixpoint subst (x:id) (s:tm) (t:tm) : tm :=
   | tcase t1 xl tl xr tr => tcase (subst x s t1)
                                   xl (if eq_id_dec x xl then tl else subst x s tl)
                                   xr (if eq_id_dec x xr then tr else subst x s tr)
+  | tnil T => tnil T
+  | tcons t1 t2 => tcons (subst x s t1) (subst x s t2)
+  | tlcase t0 t1 y ys t2 => tlcase (subst x s t0) (subst x s t1) y ys
+                                   (if (eq_id_dec x y)
+                                    then t2
+                                    else if (eq_id_dec x ys) then t2 else (subst x s t2))
   end.
 
 Notation "'[' x ':=' s ']' t" := (subst x s t) (at level 20).
@@ -1049,6 +1051,10 @@ Inductive value : tm -> Prop :=
       value v -> value (tinl T v)
   | v_inr : forall v T,
       value v -> value (tinr T v)
+  | v_nil : forall T,
+      value (tnil T)
+  | v_cons : forall v1 v2,
+      value v1 -> value v2 -> value (tcons v1 v2)
   .
 
 Hint Constructors value.
@@ -1134,12 +1140,29 @@ Inductive step : tm -> tm -> Prop :=
   | ST_CaseInr : forall v T xl tl xr tr,
          value v ->
          tcase (tinr T v) xl tl xr tr ==> [xr:=v]tr
+  | ST_Cons1 : forall t1 t1' t2,
+         t1 ==> t1' ->
+         tcons t1 t2 ==> tcons t1' t2
+  | ST_Cons2 : forall v1 t2 t2',
+         value v1 ->
+         t2 ==> t2' ->
+         tcons v1 t2 ==> tcons v1 t2'
+  | ST_Lcase1 : forall t0 t0' t1 xh xt t2,
+         t0 ==> t0' ->
+         tlcase t0 t1 xh xt t2 ==> tlcase t0' t1 xh xt t2
+  | ST_LcaseNil : forall t1 xh xt t2 T,
+         tlcase (tnil T) t1 xh xt t2 ==> t1
+  | ST_LcaseCons : forall vh vt t1 xh xt t2,
+         value (tcons vh vt) ->
+         tlcase (tcons vh vt) t1 xh xt t2 ==> [xh:=vh]([xt:=vt]t2)
 
 where "t1 '==>' t2" := (step t1 t2).
 
 Tactic Notation "step_cases" tactic(first) ident(c) :=
   first;
-  [ Case_aux c "ST_AppAbs" | Case_aux c "ST_App1" | Case_aux c "ST_App2"
+  [ Case_aux c "ST_AppAbs"
+  | Case_aux c "ST_App1"
+  | Case_aux c "ST_App2"
   | Case_aux c "ST_Succ"
   | Case_aux c "ST_SuccNat"
   | Case_aux c "ST_Pred"
@@ -1159,6 +1182,16 @@ Tactic Notation "step_cases" tactic(first) ident(c) :=
   | Case_aux c "ST_SndPair"
   | Case_aux c "ST_Let1"
   | Case_aux c "ST_LetValue"
+  | Case_aux c "ST_Inl"
+  | Case_aux c "ST_Inr"
+  | Case_aux c "ST_Case"
+  | Case_aux c "ST_CaseInl"
+  | Case_aux c "ST_CaseInr"
+  | Case_aux c "ST_Cons1"
+  | Case_aux c "ST_Cons2"
+  | Case_aux c "ST_Lcase1"
+  | Case_aux c "ST_LcaseNil"
+  | Case_aux c "ST_LcaseCons"
   ].
 
 Notation multistep := (multi step).
@@ -1232,6 +1265,17 @@ Inductive has_type : context -> tm -> ty -> Prop :=
       extend Gamma x1 T1 |- t1 \in T ->
       extend Gamma x2 T2 |- t2 \in T ->
       Gamma |- (tcase t0 x1 t1 x2 t2) \in T
+  | T_Nil : forall Gamma T,
+      Gamma |- (tnil T) \in (TList T)
+  | T_Cons : forall Gamma t1 t2 T,
+      Gamma |- t1 \in T ->
+      Gamma |- t2 \in (TList T) ->
+      Gamma |- (tcons t1 t2) \in (TList T)
+  | T_Lcase : forall Gamma t0 t1 t2 xh xt S T,
+      Gamma |- t0 \in (TList S) ->
+      Gamma |- t1 \in T ->
+      extend (extend Gamma xh S) xt (TList S) |- t2 \in T ->
+      Gamma |- (tlcase t0 t1 xh xt t2) \in T
 
 where "Gamma '|-' t '\in' T" := (has_type Gamma t T) : type_scope.
 
@@ -1253,6 +1297,9 @@ Tactic Notation "has_type_cases" tactic(first) ident(c) :=
   | Case_aux c "T_Inl"
   | Case_aux c "T_Inr"
   | Case_aux c "T_Case"
+  | Case_aux c "T_Nil"
+  | Case_aux c "T_Cons"
+  | Case_aux c "T_Lcase"
 ].
 
 (* ###################################################################### *)
@@ -1452,7 +1499,6 @@ Proof. unfold test. normalize. Qed.
 End Sumtest2.
 
 (** *** Lists *)
-(*
 Module ListTest.
 
 (* let l = cons 5 (cons 6 (nil Nat)) in
@@ -1467,7 +1513,6 @@ Definition test :=
        (tnat 0)
        x y (tmult (tvar x) (tvar x))).
 
-(*
 Example typechecks :
   (@empty ty) |- test \in TNat.
 Proof. unfold test. eauto 20. Qed.
@@ -1475,10 +1520,9 @@ Proof. unfold test. eauto 20. Qed.
 Example reduces :
   test ==>* (tnat 25).
 Proof. unfold test. normalize. Qed.
-*)
 
 End ListTest.
-*)
+
 (** *** [fix] *)
 (*
 Module FixTest1.
@@ -1672,6 +1716,14 @@ Proof.
   exists v1. exists v2. auto.
 Qed.
 
+Lemma list_value : forall t T Gamma,
+  Gamma |- t \in (TList T) -> value t ->
+  t = (tnil T) \/ exists vh vt, value vh /\ value vt /\ t = tcons vh vt.
+Proof.
+  intros. inversion H0; subst; inversion H; subst. left. auto. inversion H0; subst. right.
+  exists v1, v2. auto.
+Qed.
+
 Theorem progress : forall t T,
      empty |- t \in T ->
      value t \/ exists t', t ==> t'.
@@ -1777,6 +1829,17 @@ Proof with eauto.
     SCase "t0 = tinl T2 v". exists ([x1:=v]t1)...
     SCase "t0 = tinr T1 v". exists ([x2:=v]t2)...
     SCase "t0 steps". inversion H as [t0' Ht0']. exists (tcase t0' x1 t1 x2 t2)...
+  Case "T_Nil". left...
+  Case "T_Cons". destruct IHHt1...
+    SCase "t1 is a value". destruct IHHt2...
+      SSCase "t2 steps". right. inversion H0 as [t2' Ht2']. exists (tcons t1 t2')...
+    SCase "t1 steps". right. inversion H as [t1' Ht1']. exists (tcons t1' t2)...
+  Case "T_Lcase". right. destruct IHHt1...
+    SCase "t0 is a value". apply list_value in Ht1... inversion Ht1.
+      SSCase "t0 = tnil". subst. exists t1...
+      SSCase "t0 = tcons vh vt". inversion H0. inversion H1. inversion H2. inversion H4.
+        subst. exists ([xh:=x]([xt:=x0]t2))...
+    SCase "t0 steps". inversion H. exists (tlcase x t1 xh xt t2)...
 Qed.
 
 
@@ -1851,6 +1914,22 @@ Inductive appears_free_in : id -> tm -> Prop :=
         x <> x2 ->
         appears_free_in x t2 ->
         appears_free_in x (tcase t0 x1 t1 x2 t2)
+  | afi_cons_head : forall x t1 t2,
+        appears_free_in x t1 ->
+        appears_free_in x (tcons t1 t2)
+  | afi_cons_tail : forall x t1 t2,
+        appears_free_in x t2 ->
+        appears_free_in x (tcons t1 t2)
+  | afi_lcase1 : forall x t0 t1 xh xt t2,
+        appears_free_in x t0 ->
+        appears_free_in x (tlcase t0 t1 xh xt t2)
+  | afi_lcase_nil : forall x t0 t1 xh xt t2,
+        appears_free_in x t1 ->
+        appears_free_in x (tlcase t0 t1 xh xt t2)
+  | afi_lcase_cons : forall x t0 t1 xh xt t2,
+        x <> xh -> x <> xt ->
+        appears_free_in x t2 ->
+        appears_free_in x (tlcase t0 t1 xh xt t2)
   .
 
 Hint Constructors appears_free_in.
@@ -1882,6 +1961,11 @@ Proof with eauto.
     eapply T_Case...
     eapply IHhas_type2... intros y Hafi. unfold extend. destruct (eq_id_dec x1 y)...
     eapply IHhas_type3... intros y Hafi. unfold extend. destruct (eq_id_dec x2 y)...
+  Case "T_Cons".
+    eapply T_Cons...
+  Case "T_Lcase".
+    eapply T_Lcase...
+    eapply IHhas_type3... intros y Hafi. unfold extend. destruct (eq_id_dec xt y)... destruct (eq_id_dec xh y)...
 Qed.
 
 Lemma free_in_context : forall x t T Gamma,
@@ -1900,6 +1984,8 @@ Proof with eauto.
   Case "T_Case".
     SCase "inl". apply IHHtyp2 in H6. inversion H6 as [T' HT']. rewrite extend_neq in HT'...
     SCase "inr". apply IHHtyp3 in H6. inversion H6 as [T' HT']. rewrite extend_neq in HT'...
+  Case "T_Lcase".
+    apply IHHtyp3 in H7. destruct H7 as [T' HT']. rewrite (extend_neq) in HT'... rewrite extend_neq in HT'...
 Qed.
 
 (* ###################################################################### *)
@@ -2008,6 +2094,14 @@ Proof with eauto.
     SCase "right".
       destruct (eq_id_dec x i0)... subst. rewrite extend_ovwr_eq in H8...
       apply IHt3. rewrite extend_neq_swap...
+  Case "tlcase".
+    eapply T_Lcase... destruct (eq_id_dec x i)... subst. rewrite extend_ovwr_eq in H8...
+    destruct (eq_id_dec x i0)... subst.
+    rewrite extend_neq_swap in H8. rewrite extend_ovwr_eq in H8... rewrite extend_neq_swap in H8...
+    apply neq_symm...
+    apply IHt3. rewrite extend_neq_swap...
+    replace (extend (extend Gamma i S0) x U) with (extend (extend Gamma x U) i S0) by (rewrite  extend_neq_swap; auto).
+    assumption.
 Qed.
 
 (* ###################################################################### *)
@@ -2054,6 +2148,9 @@ Proof with eauto.
   Case "T_Case".
     apply substitution_preserves_typing with T1... inversion HT1...
     apply substitution_preserves_typing with T2... inversion HT1...
+  Case "T_Lcase".
+    inversion HT1. subst.
+    apply substitution_preserves_typing with S... apply substitution_preserves_typing with (TList S)...
 Qed.
 (** [] *)
 

@@ -1665,8 +1665,16 @@ Qed.
 (** Write a careful informal proof of the preservation theorem,
     concentrating on the [T_App], [T_Deref], [T_Assign], and [T_Ref]
     cases.
+*)
+(*
+By induction on the derivation of the type of t.
 
-(* FILL IN HERE *)
+- If the last rule to show that [Gamma; ST |- t \in T] was
+  T_App we know that there exist [x t12 t2 T1] such that
+  t = tapp (tabs x T1 t12) t2
+
+
+
 [] *)
 
 
@@ -1892,24 +1900,39 @@ Qed.
     sure it gives the correct result when applied to the argument
     [4].) *)
 
+Definition fact_inner :=
+ tabs y TNat (tif0 (tvar y) (tnat 1) (tmult (tvar y) (tapp (tderef (tvar r)) (tpred (tvar y))))).
+
 Definition factorial : tm :=
-  (* FILL IN HERE *) admit.
+  tapp
+    (tabs r (TRef (TArrow TNat TNat))
+      (tabs y TNat
+        (tseq (tassign (tvar r) fact_inner) (tapp fact_inner (tvar y)))))
+    (tref (tabs y TNat (tnat 1))).
 
 Lemma factorial_type : empty; nil |- factorial \in (TArrow TNat TNat).
 Proof with eauto.
-  (* FILL IN HERE *) Admitted.
+  unfold factorial... unfold fact_inner...
+  apply T_App with (T1:= TRef (TArrow TNat TNat))...
+  apply T_Abs... apply T_Abs... unfold tseq.
+  eapply T_App... apply T_Abs...
+  eapply T_App... apply T_Abs...
+  apply T_If0... apply T_Mult... eapply T_App... apply T_Deref. apply T_Var...
+  apply T_Var...
+  eapply T_Assign... apply T_Var... rewrite extend_neq... rewrite extend_eq... unfold y, r. intro. inversion H.
+  eapply T_Abs... eapply T_If0... eapply T_Mult... eapply T_App... apply T_Deref. apply T_Var.
+  rewrite extend_neq... unfold y,r. intro. inversion H.
+Qed.
 
 (** If your definition is correct, you should be able to just
     uncomment the example below; the proof should be fully
     automatic using the [reduce] tactic. *)
 
-(*
 Lemma factorial_4 : exists st,
   tapp factorial (tnat 4) / nil ==>* tnat 24 / st.
 Proof.
   eexists. unfold factorial. reduce.
 Qed.
-*)
 (** [] *)
 
 (* ################################### *)

@@ -1198,8 +1198,10 @@ Definition store_well_typed (ST:store_ty) (st:store) :=
     different store typings [ST1] and [ST2] such that both
     [ST1 |- st] and [ST2 |- st]? *)
 
-(* I guess we could have two circular stores that give the types in
-   the opposite order.
+(*
+   st  = [\x:Nat. !(loc 1) x ; \x:Nat. !(loc 0) x]
+   ST1 = [TArrow TNat TBool ; TArrow TNat TBool]
+   ST2 = [TArrow TNat TNat  ; TArrow TNat TNat]
 *)
 (** [] *)
 
